@@ -1,0 +1,59 @@
+package com.patternverifier.verifiers;
+
+import com.patternverifier.core.ClassMetadata;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class DecoratorVerifier {
+
+    private final ClassMetadata decorator;
+    private final ClassMetadata component;
+
+    public DecoratorVerifier(ClassMetadata decorator, ClassMetadata component) {
+        this.decorator = decorator;
+        this.component = component;
+    }
+
+    public List<String> verify() {
+        List<String> violations = new ArrayList<>();
+        checkDecoratorImplementsComponent(violations);
+        checkDecoratorHasComponentField(violations);
+        checkConstructorAcceptsComponent(violations);
+        return violations;
+    }
+
+    private void checkDecoratorImplementsComponent(List<String> violations) {
+        if (!decorator.getInterfaces().contains(component.getClassName())) {
+            violations.add(
+                decorator.getSimpleName() + " non implementa l'interfaccia " + component.getSimpleName() +
+                " — il Decorator deve implementare la stessa interfaccia del Component"
+            );
+        }
+    }
+
+    private void checkDecoratorHasComponentField(List<String> violations) {
+        // Il campo deve essere del tipo dell'interfaccia, non di una classe concreta.
+        // Questo è ciò che distingue il Decorator dal Proxy.
+        boolean hasField = decorator.getFields().stream()
+                .anyMatch(f -> f.getTypeName().equals(component.getClassName()));
+        if (!hasField) {
+            violations.add(
+                decorator.getSimpleName() + " non ha un campo di tipo " + component.getSimpleName() +
+                " — il Decorator deve wrappare il Component tramite il tipo dell'interfaccia, non una classe concreta"
+            );
+        }
+    }
+
+    private void checkConstructorAcceptsComponent(List<String> violations) {
+        boolean hasConstructorWithComponent = decorator.getMethods().stream()
+                .filter(m -> m.isConstructor())
+                .anyMatch(m -> m.getParameterTypeNames().contains(component.getClassName()));
+        if (!hasConstructorWithComponent) {
+            violations.add(
+                decorator.getSimpleName() + " non ha un costruttore che accetta " + component.getSimpleName() +
+                " — il Decorator deve ricevere il Component da wrappare tramite costruttore"
+            );
+        }
+    }
+}

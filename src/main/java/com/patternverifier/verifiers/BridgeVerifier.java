@@ -1,0 +1,63 @@
+package com.patternverifier.verifiers;
+
+import com.patternverifier.core.ClassMetadata;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class BridgeVerifier {
+
+    private final ClassMetadata abstraction;
+    private final ClassMetadata implementor;
+
+    public BridgeVerifier(ClassMetadata abstraction, ClassMetadata implementor) {
+        this.abstraction = abstraction;
+        this.implementor = implementor;
+    }
+
+    public List<String> verify() {
+        List<String> violations = new ArrayList<>();
+        checkImplementorIsAbstract(violations);
+        checkAbstractionHasImplementorField(violations);
+        checkAbstractionDoesNotImplementImplementor(violations);
+        return violations;
+    }
+
+    private void checkImplementorIsAbstract(List<String> violations) {
+        if (!implementor.isInterface() && !implementor.isAbstract()) {
+            violations.add(implementor.getSimpleName()
+                    + " non è né un'interfaccia né una classe astratta"
+                    + " — l'Implementor del Bridge deve definire un contratto astratto"
+                    + " per la gerarchia di implementazione");
+        }
+    }
+
+    private void checkAbstractionHasImplementorField(List<String> violations) {
+        String implementorName = implementor.getClassName();
+        boolean found = abstraction.getFields().stream()
+                .anyMatch(f -> f.getTypeName().equals(implementorName));
+        if (!found) {
+            violations.add(abstraction.getSimpleName()
+                    + " non ha un campo di tipo "
+                    + implementor.getSimpleName()
+                    + " — l'Abstraction deve contenere un riferimento all'Implementor"
+                    + " per delegargli le operazioni (il \"ponte\" tra le due gerarchie)");
+        }
+    }
+
+    // Verifica che le due gerarchie siano indipendenti: Abstraction non deve
+    // implementare né estendere Implementor, altrimenti le due gerarchie si sovrappongono
+    // e il pattern perde il suo scopo di evoluzione indipendente.
+    private void checkAbstractionDoesNotImplementImplementor(List<String> violations) {
+        String implementorName = implementor.getClassName();
+        boolean sameHierarchy = abstraction.getInterfaces().contains(implementorName)
+                || implementorName.equals(abstraction.getSuperClassName());
+        if (sameHierarchy) {
+            violations.add(abstraction.getSimpleName()
+                    + " implementa o estende "
+                    + implementor.getSimpleName()
+                    + " — nel Bridge le due gerarchie (Abstraction e Implementor)"
+                    + " devono essere indipendenti e non sovrapposte");
+        }
+    }
+}
