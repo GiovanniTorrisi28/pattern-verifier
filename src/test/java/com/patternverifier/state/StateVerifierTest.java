@@ -10,6 +10,7 @@ import com.patternverifier.state.wrong.ConcreteState;
 import com.patternverifier.state.wrong.EmptyState;
 import com.patternverifier.state.wrong.MissingFieldContext;
 import com.patternverifier.state.wrong.MissingTransitionContext;
+import com.patternverifier.state.wrong.NoStateInvocationContext;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -88,5 +89,18 @@ class StateVerifierTest {
                 "Dovrebbe riportare che lo State non è astratto");
         assertTrue(msg.contains("campo") || msg.contains("transizione"),
                 "Dovrebbe riportare violazioni del Context");
+        assertTrue(msg.contains("invoca"),
+                "Dovrebbe riportare che il Context non invoca metodi su State");
+    }
+
+    @Test
+    void noStateInvocationShouldBeReported() {
+        AssertionError error = assertThrows(AssertionError.class, () ->
+                PatternAssertions.assertThat(NoStateInvocationContext.class)
+                        .implementsState()
+                        .withStateInterface(LightState.class)
+        );
+        assertTrue(error.getMessage().contains("invoca"),
+                "Il messaggio dovrebbe indicare che il Context non invoca metodi su State");
     }
 }

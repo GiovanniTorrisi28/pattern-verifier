@@ -1,6 +1,7 @@
 package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
+import com.patternverifier.core.MethodInvocationAnalyzer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +23,19 @@ public class ProxyVerifier {
         checkProxyImplementsSubject(violations);
         checkProxyHasSubjectField(violations);
         checkRealSubjectImplementsSubject(violations);
+        checkProxyDelegatesToSubject(violations);
         return violations;
+    }
+
+    private void checkProxyDelegatesToSubject(List<String> violations) {
+        boolean delegates = MethodInvocationAnalyzer.invokesMethodsOn(proxy.getClassName(), subject.getClassName())
+                || MethodInvocationAnalyzer.invokesMethodsOn(proxy.getClassName(), realSubject.getClassName());
+        if (!delegates) {
+            violations.add(proxy.getSimpleName()
+                    + " non delega mai al Subject "
+                    + subject.getSimpleName()
+                    + " — il Proxy deve invocare i metodi del Subject che controlla");
+        }
     }
 
     private void checkProxyImplementsSubject(List<String> violations) {

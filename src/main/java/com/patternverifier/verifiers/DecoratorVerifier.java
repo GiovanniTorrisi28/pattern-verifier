@@ -1,6 +1,7 @@
 package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
+import com.patternverifier.core.MethodInvocationAnalyzer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +21,17 @@ public class DecoratorVerifier {
         checkDecoratorImplementsComponent(violations);
         checkDecoratorHasComponentField(violations);
         checkConstructorAcceptsComponent(violations);
+        checkDecoratorDelegatesToComponent(violations);
         return violations;
+    }
+
+    private void checkDecoratorDelegatesToComponent(List<String> violations) {
+        if (!MethodInvocationAnalyzer.invokesMethodsOn(decorator.getClassName(), component.getClassName())) {
+            violations.add(decorator.getSimpleName()
+                    + " non delega mai al Component "
+                    + component.getSimpleName()
+                    + " — il Decorator deve chiamare i metodi del Component wrappato");
+        }
     }
 
     private void checkDecoratorImplementsComponent(List<String> violations) {

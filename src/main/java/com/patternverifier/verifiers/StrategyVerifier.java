@@ -1,6 +1,7 @@
 package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
+import com.patternverifier.core.MethodInvocationAnalyzer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +22,7 @@ public class StrategyVerifier {
         checkStrategyHasMethods(violations);
         checkContextHasStrategyField(violations);
         checkContextHasInjectionPoint(violations);
+        checkContextInvokesStrategyMethods(violations);
         return violations;
     }
 
@@ -51,6 +53,15 @@ public class StrategyVerifier {
                     + " non ha un campo di tipo "
                     + strategy.getSimpleName()
                     + " — il Context deve mantenere un riferimento alla Strategy corrente");
+        }
+    }
+
+    private void checkContextInvokesStrategyMethods(List<String> violations) {
+        if (!MethodInvocationAnalyzer.invokesMethodsOn(context.getClassName(), strategy.getClassName())) {
+            violations.add(context.getSimpleName()
+                    + " non invoca mai metodi su istanze di "
+                    + strategy.getSimpleName()
+                    + " — il Context deve delegare l'esecuzione dell'algoritmo alla Strategy");
         }
     }
 

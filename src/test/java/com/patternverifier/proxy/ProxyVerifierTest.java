@@ -8,6 +8,7 @@ import com.patternverifier.proxy.correct.RealImage;
 import com.patternverifier.proxy.wrong.AllViolationsProxy;
 import com.patternverifier.proxy.wrong.MissingFieldProxy;
 import com.patternverifier.proxy.wrong.MissingSubjectInterfaceProxy;
+import com.patternverifier.proxy.wrong.NoDelegatingProxy;
 import com.patternverifier.proxy.wrong.NotAnImage;
 import org.junit.jupiter.api.Test;
 
@@ -79,5 +80,19 @@ class ProxyVerifierTest {
         String msg = error.getMessage();
         assertTrue(msg.contains("non implementa"), "Dovrebbe riportare la mancanza dell'interfaccia Subject");
         assertTrue(msg.contains("campo"),           "Dovrebbe riportare il campo Subject mancante");
+        assertTrue(msg.contains("delega"),
+                "Dovrebbe riportare che il Proxy non delega al Subject");
+    }
+
+    @Test
+    void noDelegationProxyShouldBeReported() {
+        AssertionError error = assertThrows(AssertionError.class, () ->
+                PatternAssertions.assertThat(NoDelegatingProxy.class)
+                        .implementsProxy()
+                        .withRealSubject(RealImage.class)
+                        .forSubject(Image.class)
+        );
+        assertTrue(error.getMessage().contains("delega"),
+                "Il messaggio dovrebbe indicare che il Proxy non delega al Subject");
     }
 }

@@ -1,6 +1,7 @@
 package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
+import com.patternverifier.core.MethodInvocationAnalyzer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +30,17 @@ public class ObserverVerifier {
         checkSubjectHasObserverCollection(violations);
         checkSubjectHasRegisterMethod(violations);
         checkSubjectHasNotifyMethod(violations);
+        checkSubjectInvokesObserverMethods(violations);
         return violations;
+    }
+
+    private void checkSubjectInvokesObserverMethods(List<String> violations) {
+        if (!MethodInvocationAnalyzer.invokesMethodsOn(subject.getClassName(), observer.getClassName())) {
+            violations.add(subject.getSimpleName()
+                    + " non invoca mai metodi sugli Observer di tipo "
+                    + observer.getSimpleName()
+                    + " — il Subject deve notificare gli observer chiamando i loro metodi di callback");
+        }
     }
 
     private void checkObserverIsAbstract(List<String> violations) {

@@ -1,6 +1,7 @@
 package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
+import com.patternverifier.core.MethodInvocationAnalyzer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,7 @@ public class StateVerifier {
         checkStateHasMethods(violations);
         checkContextHasStateField(violations);
         checkContextHasTransitionMethod(violations);
+        checkContextInvokesStateMethods(violations);
         return violations;
     }
 
@@ -55,6 +57,15 @@ public class StateVerifier {
                     + " non ha un campo di tipo "
                     + state.getSimpleName()
                     + " — il Context deve mantenere un riferimento allo stato corrente");
+        }
+    }
+
+    private void checkContextInvokesStateMethods(List<String> violations) {
+        if (!MethodInvocationAnalyzer.invokesMethodsOn(context.getClassName(), state.getClassName())) {
+            violations.add(context.getSimpleName()
+                    + " non invoca mai metodi su istanze di "
+                    + state.getSimpleName()
+                    + " — il Context deve delegare il comportamento allo State corrente");
         }
     }
 

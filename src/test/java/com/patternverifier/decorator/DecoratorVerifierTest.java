@@ -8,6 +8,7 @@ import com.patternverifier.decorator.wrong.AllViolationsDecorator;
 import com.patternverifier.decorator.wrong.MissingConstructorDecorator;
 import com.patternverifier.decorator.wrong.MissingFieldDecorator;
 import com.patternverifier.decorator.wrong.MissingInterfaceDecorator;
+import com.patternverifier.decorator.wrong.NoDelegatingDecorator;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -73,5 +74,18 @@ class DecoratorVerifierTest {
         assertTrue(msg.contains("non implementa"), "Dovrebbe riportare la mancanza dell'interfaccia Component");
         assertTrue(msg.contains("campo"),           "Dovrebbe riportare il campo Component mancante");
         assertTrue(msg.contains("costruttore"),     "Dovrebbe riportare il costruttore mancante");
+        assertTrue(msg.contains("delega"),
+                "Dovrebbe riportare che il Decorator non delega al Component");
+    }
+
+    @Test
+    void noDelegationDecoratorShouldBeReported() {
+        AssertionError error = assertThrows(AssertionError.class, () ->
+                PatternAssertions.assertThat(NoDelegatingDecorator.class)
+                        .implementsDecorator()
+                        .forComponent(TextComponent.class)
+        );
+        assertTrue(error.getMessage().contains("delega"),
+                "Il messaggio dovrebbe indicare che il Decorator non delega al Component");
     }
 }

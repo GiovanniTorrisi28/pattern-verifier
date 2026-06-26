@@ -10,6 +10,7 @@ import com.patternverifier.observer.wrong.ConcreteObserver;
 import com.patternverifier.observer.wrong.MissingCollectionSubject;
 import com.patternverifier.observer.wrong.MissingNotifySubject;
 import com.patternverifier.observer.wrong.MissingRegisterSubject;
+import com.patternverifier.observer.wrong.EmptyNotifySubject;
 import com.patternverifier.observer.wrong.WrongNamingObserver;
 import org.junit.jupiter.api.Test;
 
@@ -103,5 +104,18 @@ class ObserverVerifierTest {
                 "Dovrebbe riportare il metodo di registrazione mancante");
         assertTrue(msg.contains("notif") || msg.contains("fire"),
                 "Dovrebbe riportare il metodo di notifica mancante");
+        assertTrue(msg.contains("invoca"),
+                "Dovrebbe riportare che il Subject non invoca metodi sugli Observer");
+    }
+
+    @Test
+    void emptyNotifySubjectShouldBeReported() {
+        AssertionError error = assertThrows(AssertionError.class, () ->
+                PatternAssertions.assertThat(EmptyNotifySubject.class)
+                        .implementsObserver()
+                        .withObserverInterface(EventListener.class)
+        );
+        assertTrue(error.getMessage().contains("invoca"),
+                "Il messaggio dovrebbe indicare che il Subject non invoca metodi sugli Observer");
     }
 }

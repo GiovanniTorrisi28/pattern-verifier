@@ -9,6 +9,7 @@ import com.patternverifier.strategy.wrong.ConcreteStrategy;
 import com.patternverifier.strategy.wrong.EmptyStrategy;
 import com.patternverifier.strategy.wrong.MissingFieldContext;
 import com.patternverifier.strategy.wrong.MissingInjectionContext;
+import com.patternverifier.strategy.wrong.NoStrategyInvocationContext;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -88,5 +89,18 @@ class StrategyVerifierTest {
                 "Dovrebbe riportare il campo Strategy mancante nel Context");
         assertTrue(msg.contains("setter") || msg.contains("costruttore"),
                 "Dovrebbe riportare il punto di iniezione mancante nel Context");
+        assertTrue(msg.contains("invoca"),
+                "Dovrebbe riportare che il Context non invoca metodi su Strategy");
+    }
+
+    @Test
+    void noStrategyInvocationShouldBeReported() {
+        AssertionError error = assertThrows(AssertionError.class, () ->
+                PatternAssertions.assertThat(NoStrategyInvocationContext.class)
+                        .implementsStrategy()
+                        .withStrategyInterface(SortStrategy.class)
+        );
+        assertTrue(error.getMessage().contains("invoca"),
+                "Il messaggio dovrebbe indicare che il Context non invoca metodi su Strategy");
     }
 }
