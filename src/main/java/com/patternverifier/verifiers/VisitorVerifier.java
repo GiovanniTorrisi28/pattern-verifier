@@ -1,6 +1,7 @@
 package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
+import com.patternverifier.core.MethodInvocationAnalyzer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +26,19 @@ public class VisitorVerifier {
         checkElementHasAcceptMethod(violations);
         checkConcreteVisitorImplementsVisitor(violations);
         checkConcreteVisitorHasConcreteVisitMethod(violations);
+        checkElementCallsVisitorMethods(violations);
         return violations;
+    }
+
+    private void checkElementCallsVisitorMethods(List<String> violations) {
+        // Se Element è astratto o interfaccia, il corpo di accept() è nelle ConcreteElement
+        // che non sono passate al verifier — skip per evitare falsi positivi
+        if (element.isAbstract() || element.isInterface()) return;
+        if (!MethodInvocationAnalyzer.invokesMethodsOn(element.getClassName(), visitorInterface.getClassName())) {
+            violations.add(element.getSimpleName()
+                    + " non invoca metodi sul Visitor nel metodo accept"
+                    + " — il double dispatch richiede che accept chiami visitor.visit(this)");
+        }
     }
 
     private void checkVisitorIsAbstract(List<String> violations) {

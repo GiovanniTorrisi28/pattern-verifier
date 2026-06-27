@@ -1,14 +1,17 @@
 package com.patternverifier.command;
 
 import com.patternverifier.PatternAssertions;
+import com.patternverifier.command.correct.Clipboard;
 import com.patternverifier.command.correct.Command;
 import com.patternverifier.command.correct.CopyCommand;
 import com.patternverifier.command.correct.EditCommand;
 import com.patternverifier.command.correct.PrintCommand;
+import com.patternverifier.command.correct.Printer;
 import com.patternverifier.command.wrong.AbstractConcreteCommand;
 import com.patternverifier.command.wrong.AllViolationsCommand;
 import com.patternverifier.command.wrong.AllViolationsConcreteCommand;
 import com.patternverifier.command.wrong.ConcreteCommandClass;
+import com.patternverifier.command.wrong.NoReceiverCommand;
 import com.patternverifier.command.wrong.WrongNamingCommand;
 import com.patternverifier.command.wrong.WrongParentConcreteCommand;
 import org.junit.jupiter.api.Test;
@@ -21,7 +24,8 @@ class CommandVerifierTest {
     void printCommandShouldPass() {
         PatternAssertions.assertThat(PrintCommand.class)
                 .implementsCommand()
-                .withCommandInterface(Command.class);
+                .withCommandInterface(Command.class)
+                .withReceiver(Printer.class);
     }
 
     @Test
@@ -29,7 +33,8 @@ class CommandVerifierTest {
         // Variante: naming perform() + metodo undo() (reversible command)
         PatternAssertions.assertThat(CopyCommand.class)
                 .implementsCommand()
-                .withCommandInterface(EditCommand.class);
+                .withCommandInterface(EditCommand.class)
+                .withReceiver(Clipboard.class);
     }
 
     @Test
@@ -74,6 +79,18 @@ class CommandVerifierTest {
         );
         assertTrue(error.getMessage().contains("concreta") || error.getMessage().contains("implementazione"),
                 "Il messaggio dovrebbe indicare che manca l'implementazione concreta di execute");
+    }
+
+    @Test
+    void noReceiverCommandShouldBeReported() {
+        AssertionError error = assertThrows(AssertionError.class, () ->
+                PatternAssertions.assertThat(NoReceiverCommand.class)
+                        .implementsCommand()
+                        .withCommandInterface(Command.class)
+                        .withReceiver(Printer.class)
+        );
+        assertTrue(error.getMessage().contains("Receiver") || error.getMessage().contains("delega"),
+                "Il messaggio dovrebbe indicare che il ConcreteCommand non delega al Receiver");
     }
 
     @Test

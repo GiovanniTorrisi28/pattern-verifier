@@ -1,6 +1,7 @@
 package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
+import com.patternverifier.core.MethodInvocationAnalyzer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +21,17 @@ public class BridgeVerifier {
         checkImplementorIsAbstract(violations);
         checkAbstractionHasImplementorField(violations);
         checkAbstractionDoesNotImplementImplementor(violations);
+        checkAbstractionInvokesImplementorMethods(violations);
         return violations;
+    }
+
+    private void checkAbstractionInvokesImplementorMethods(List<String> violations) {
+        if (!MethodInvocationAnalyzer.invokesMethodsOn(abstraction.getClassName(), implementor.getClassName())) {
+            violations.add(abstraction.getSimpleName()
+                    + " non invoca mai metodi sull'Implementor "
+                    + implementor.getSimpleName()
+                    + " — l'Abstraction deve delegare le operazioni all'Implementor (il \"ponte\" tra le due gerarchie)");
+        }
     }
 
     private void checkImplementorIsAbstract(List<String> violations) {

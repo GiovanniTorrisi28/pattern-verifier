@@ -8,6 +8,7 @@ import com.patternverifier.composite.wrong.AllViolationsComposite;
 import com.patternverifier.composite.wrong.MissingAddMethodComposite;
 import com.patternverifier.composite.wrong.MissingCollectionComposite;
 import com.patternverifier.composite.wrong.MissingInterfaceComposite;
+import com.patternverifier.composite.wrong.NoDelegatingComposite;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -73,5 +74,18 @@ class CompositeVerifierTest {
         assertTrue(msg.contains("non implementa"), "Dovrebbe riportare la mancanza dell'interfaccia Component");
         assertTrue(msg.contains("Collection"),     "Dovrebbe riportare il campo Collection mancante");
         assertTrue(msg.contains("add"),            "Dovrebbe riportare il metodo add* mancante");
+        assertTrue(msg.contains("invoca"),
+                "Dovrebbe riportare che il Composite non delega ai figli");
+    }
+
+    @Test
+    void noDelegationCompositeShouldBeReported() {
+        AssertionError error = assertThrows(AssertionError.class, () ->
+                PatternAssertions.assertThat(NoDelegatingComposite.class)
+                        .implementsComposite()
+                        .forComponent(FileSystemItem.class)
+        );
+        assertTrue(error.getMessage().contains("invoca"),
+                "Il messaggio dovrebbe indicare che il Composite non invoca metodi sui figli");
     }
 }

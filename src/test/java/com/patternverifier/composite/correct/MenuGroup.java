@@ -22,5 +22,7 @@ public class MenuGroup implements FileSystemItem {
     public String getName() { return name; }
 
     @Override
-    public long getSize() { return items.size(); }
+    public long getSize() {
+        return items.stream().mapToLong(FileSystemItem::getSize).sum();
+    }
 }

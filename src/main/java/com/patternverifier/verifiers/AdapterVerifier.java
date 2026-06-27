@@ -1,6 +1,7 @@
 package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
+import com.patternverifier.core.MethodInvocationAnalyzer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +23,17 @@ public class AdapterVerifier {
         checkAdapterImplementsTarget(violations);
         checkAdapterHasAdapteeField(violations);
         checkAdapteeDoesNotImplementTarget(violations);
+        checkAdapterDelegatesToAdaptee(violations);
         return violations;
+    }
+
+    private void checkAdapterDelegatesToAdaptee(List<String> violations) {
+        if (!MethodInvocationAnalyzer.invokesMethodsOn(adapter.getClassName(), adaptee.getClassName())) {
+            violations.add(adapter.getSimpleName()
+                    + " non delega mai all'Adaptee "
+                    + adaptee.getSimpleName()
+                    + " — l'Adapter (object adapter) deve invocare metodi dell'Adaptee per realizzare la traduzione");
+        }
     }
 
     private void checkAdapterImplementsTarget(List<String> violations) {

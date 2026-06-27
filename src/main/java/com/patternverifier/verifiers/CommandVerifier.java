@@ -1,6 +1,7 @@
 package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
+import com.patternverifier.core.MethodInvocationAnalyzer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,10 +10,16 @@ public class CommandVerifier {
 
     private final ClassMetadata concreteCommand;
     private final ClassMetadata command;
+    private final ClassMetadata receiver;
 
     public CommandVerifier(ClassMetadata concreteCommand, ClassMetadata command) {
+        this(concreteCommand, command, null);
+    }
+
+    public CommandVerifier(ClassMetadata concreteCommand, ClassMetadata command, ClassMetadata receiver) {
         this.concreteCommand = concreteCommand;
         this.command = command;
+        this.receiver = receiver;
     }
 
     public List<String> verify() {
@@ -21,6 +28,9 @@ public class CommandVerifier {
         checkCommandHasExecuteMethod(violations);
         checkConcreteCommandImplementsCommand(violations);
         checkConcreteCommandOverridesExecute(violations);
+        if (receiver != null) {
+            checkConcreteCommandDelegatesToReceiver(violations);
+        }
         return violations;
     }
 
@@ -74,6 +84,19 @@ public class CommandVerifier {
             violations.add(concreteCommand.getSimpleName()
                     + " non ha un'implementazione concreta del metodo di esecuzione"
                     + " — il ConcreteCommand deve fornire il comportamento specifico");
+        }
+    }
+
+    // La proprietà centrale del Command GoF: ConcreteCommand non contiene logica inline
+    // ma delega l'operazione reale al Receiver. Questa separazione permette all'Invoker
+    // di eseguire comandi senza conoscere chi esegue l'operazione reale.
+    private void checkConcreteCommandDelegatesToReceiver(List<String> violations) {
+        if (!MethodInvocationAnalyzer.invokesMethodsOn(concreteCommand.getClassName(), receiver.getClassName())) {
+            violations.add(concreteCommand.getSimpleName()
+                    + " non invoca mai metodi sul Receiver "
+                    + receiver.getSimpleName()
+                    + " — il ConcreteCommand deve delegare l'esecuzione al Receiver,"
+                    + " non contenere la logica inline");
         }
     }
 }

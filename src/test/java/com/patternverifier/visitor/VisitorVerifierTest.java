@@ -10,6 +10,7 @@ import com.patternverifier.visitor.correct.ShapeVisitor;
 import com.patternverifier.visitor.wrong.AbstractConcreteVisitor;
 import com.patternverifier.visitor.wrong.ConcreteVisitorInterface;
 import com.patternverifier.visitor.wrong.NoAcceptElement;
+import com.patternverifier.visitor.wrong.NoDispatchElement;
 import com.patternverifier.visitor.wrong.NoVisitMethodVisitor;
 import com.patternverifier.visitor.wrong.WrongParentConcreteVisitor;
 import org.junit.jupiter.api.Test;
@@ -111,5 +112,17 @@ class VisitorVerifierTest {
                 "Dovrebbe riportare che il Visitor non è astratto");
         assertTrue(msg.contains("implementa") || msg.contains("estende"),
                 "Dovrebbe riportare che il ConcreteVisitor non implementa Visitor");
+    }
+
+    @Test
+    void noDispatchElementShouldBeReported() {
+        AssertionError error = assertThrows(AssertionError.class, () ->
+                PatternAssertions.assertThat(HtmlExporter.class)
+                        .implementsVisitor()
+                        .withVisitorInterface(DocumentVisitor.class)
+                        .withElement(NoDispatchElement.class)
+        );
+        assertTrue(error.getMessage().contains("invoca"),
+                "Il messaggio dovrebbe indicare che l'Element non invoca metodi sul Visitor in accept");
     }
 }

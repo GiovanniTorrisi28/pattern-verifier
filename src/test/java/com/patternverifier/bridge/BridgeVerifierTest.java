@@ -6,6 +6,7 @@ import com.patternverifier.bridge.correct.Device;
 import com.patternverifier.bridge.correct.DrawingAPI;
 import com.patternverifier.bridge.correct.RemoteControl;
 import com.patternverifier.bridge.wrong.ConcreteDevice;
+import com.patternverifier.bridge.wrong.NoDelegatingAbstraction;
 import com.patternverifier.bridge.wrong.NoImplementorFieldAbstraction;
 import com.patternverifier.bridge.wrong.SameHierarchyAbstraction;
 import org.junit.jupiter.api.Test;
@@ -76,5 +77,18 @@ class BridgeVerifierTest {
                 "Dovrebbe riportare che l'Implementor non è astratto");
         assertTrue(msg.contains("campo") || msg.contains("ponte"),
                 "Dovrebbe riportare la mancanza del campo Implementor");
+        assertTrue(msg.contains("invoca"),
+                "Dovrebbe riportare che l'Abstraction non invoca metodi sull'Implementor");
+    }
+
+    @Test
+    void noDelegationAbstractionShouldBeReported() {
+        AssertionError error = assertThrows(AssertionError.class, () ->
+                PatternAssertions.assertThat(NoDelegatingAbstraction.class)
+                        .implementsBridge()
+                        .withImplementor(Device.class)
+        );
+        assertTrue(error.getMessage().contains("invoca"),
+                "Il messaggio dovrebbe indicare che l'Abstraction non invoca metodi sull'Implementor");
     }
 }

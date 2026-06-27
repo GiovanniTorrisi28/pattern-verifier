@@ -2,6 +2,7 @@ package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
 import com.patternverifier.core.FieldInfo;
+import com.patternverifier.core.MethodInvocationAnalyzer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +30,17 @@ public class CompositeVerifier {
         checkCompositeImplementsComponent(violations);
         checkHasCollectionField(violations);
         checkHasAddMethod(violations);
+        checkCompositeDelegatesToComponent(violations);
         return violations;
+    }
+
+    private void checkCompositeDelegatesToComponent(List<String> violations) {
+        if (!MethodInvocationAnalyzer.invokesMethodsOn(composite.getClassName(), component.getClassName())) {
+            violations.add(composite.getSimpleName()
+                    + " non invoca mai metodi sui Component figli di tipo "
+                    + component.getSimpleName()
+                    + " — il Composite deve delegare le operazioni ai figli");
+        }
     }
 
     private void checkCompositeImplementsComponent(List<String> violations) {

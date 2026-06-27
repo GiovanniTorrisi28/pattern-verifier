@@ -2,6 +2,7 @@ package com.patternverifier.core;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
@@ -48,6 +49,24 @@ public class MethodInvocationAnalyzer extends ClassVisitor {
             if ((opcode == Opcodes.INVOKEVIRTUAL || opcode == Opcodes.INVOKEINTERFACE)
                     && owner.equals(targetTypeInternal)) {
                 found = true;
+            }
+        }
+
+        // Rileva method reference (es. FileSystemItem::getSize) che il compilatore
+        // Java rappresenta come INVOKEDYNAMIC con un Handle nel bootstrap argument
+        // che punta direttamente al metodo referenziato — senza generare un metodo
+        // sintetico nella stessa .class come fa invece una lambda con corpo esplicito.
+        @Override
+        public void visitInvokeDynamicInsn(String name, String descriptor,
+                                           Handle bootstrapMethodHandle,
+                                           Object... bootstrapMethodArguments) {
+            for (Object arg : bootstrapMethodArguments) {
+                if (arg instanceof Handle) {
+                    Handle handle = (Handle) arg;
+                    if (handle.getOwner().equals(targetTypeInternal)) {
+                        found = true;
+                    }
+                }
             }
         }
     }

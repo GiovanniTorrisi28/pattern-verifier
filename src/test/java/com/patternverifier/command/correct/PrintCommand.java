@@ -1,14 +1,16 @@
 package com.patternverifier.command.correct;
 
 public class PrintCommand implements Command {
+    private final Printer printer;
     private final String message;
 
-    public PrintCommand(String message) {
+    public PrintCommand(Printer printer, String message) {
+        this.printer = printer;
         this.message = message;
     }
 
     @Override
     public void execute() {
-        System.out.println(message);
+        printer.print(message);
     }
 }

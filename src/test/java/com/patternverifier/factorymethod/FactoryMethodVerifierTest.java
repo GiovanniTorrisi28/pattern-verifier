@@ -2,7 +2,9 @@ package com.patternverifier.factorymethod;
 
 import com.patternverifier.PatternAssertions;
 import com.patternverifier.factorymethod.correct.Animal;
+import com.patternverifier.factorymethod.correct.AnimalCreator;
 import com.patternverifier.factorymethod.correct.AnimalFactory;
+import com.patternverifier.factorymethod.correct.BirdFactory;
 import com.patternverifier.factorymethod.correct.CatFactory;
 import com.patternverifier.factorymethod.correct.DogFactory;
 import com.patternverifier.factorymethod.wrong.AllViolationsFactory;
@@ -31,6 +33,15 @@ class FactoryMethodVerifierTest {
                 .implementsFactoryMethod()
                 .withAbstractFactoryMethod("createAnimal", Animal.class)
                 .withConcreteCreator(CatFactory.class);
+    }
+
+    @Test
+    void interfaceCreatorShouldPass() {
+        // Variante: Creator come interfaccia — ConcreteCreator usa implements invece di extends
+        PatternAssertions.assertThat(AnimalCreator.class)
+                .implementsFactoryMethod()
+                .withAbstractFactoryMethod("createAnimal", Animal.class)
+                .withConcreteCreator(BirdFactory.class);
     }
 
     @Test

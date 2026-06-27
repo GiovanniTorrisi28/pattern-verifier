@@ -53,10 +53,11 @@ public class FactoryMethodVerifier {
     }
 
     private void checkConcreteCreatorExtendsCreator(List<String> violations) {
-        String superClass = concreteCreator.getSuperClassName();
-        if (!creator.getClassName().equals(superClass)) {
+        boolean connected = creator.getClassName().equals(concreteCreator.getSuperClassName())
+                || concreteCreator.getInterfaces().contains(creator.getClassName());
+        if (!connected) {
             violations.add(
-                concreteCreator.getSimpleName() + " non estende " + creator.getSimpleName() +
+                concreteCreator.getSimpleName() + " non estende né implementa " + creator.getSimpleName() +
                 " — il ConcreteCreator deve estendere il Creator"
             );
         }

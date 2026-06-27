@@ -9,6 +9,7 @@ import com.patternverifier.adapter.wrong.AdapteeAlreadyImplementsTarget;
 import com.patternverifier.adapter.wrong.AllViolationsAdapter;
 import com.patternverifier.adapter.wrong.MissingFieldAdapter;
 import com.patternverifier.adapter.wrong.MissingInterfaceAdapter;
+import com.patternverifier.adapter.wrong.NoDelegatingAdapter;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -78,5 +79,19 @@ class AdapterVerifierTest {
         String msg = error.getMessage();
         assertTrue(msg.contains("non implementa"), "Dovrebbe riportare la mancanza dell'interfaccia Target");
         assertTrue(msg.contains("campo"),           "Dovrebbe riportare il campo Adaptee mancante");
+        assertTrue(msg.contains("delega"),
+                "Dovrebbe riportare che l'Adapter non delega all'Adaptee");
+    }
+
+    @Test
+    void noDelegationAdapterShouldBeReported() {
+        AssertionError error = assertThrows(AssertionError.class, () ->
+                PatternAssertions.assertThat(NoDelegatingAdapter.class)
+                        .implementsAdapter()
+                        .fromAdaptee(LegacySocket.class)
+                        .toTarget(ModernSocket.class)
+        );
+        assertTrue(error.getMessage().contains("delega"),
+                "Il messaggio dovrebbe indicare che l'Adapter non delega all'Adaptee");
     }
 }
