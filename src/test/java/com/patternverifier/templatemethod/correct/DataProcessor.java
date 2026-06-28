@@ -1,5 +1,8 @@
 package com.patternverifier.templatemethod.correct;
 
+import com.patternverifier.annotations.GoFTemplateMethod;
+
+@GoFTemplateMethod(templateMethod = "process")
 public abstract class DataProcessor {
 
     public final void process() {

@@ -1,5 +1,8 @@
 package com.patternverifier.state.correct;
 
+import com.patternverifier.annotations.GoFState;
+
+@GoFState(state = LightState.class)
 public class TrafficLight {
 
     private LightState currentState;

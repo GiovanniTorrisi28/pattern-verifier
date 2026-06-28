@@ -1,5 +1,8 @@
 package com.patternverifier.decorator.correct;
 
+import com.patternverifier.annotations.GoFDecorator;
+
+@GoFDecorator(component = TextComponent.class)
 public class BoldDecorator implements TextComponent {
 
     private TextComponent wrapped;

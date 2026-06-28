@@ -1,5 +1,8 @@
 package com.patternverifier.chainofresponsibility.correct;
 
+import com.patternverifier.annotations.GoFChainOfResponsibility;
+
+@GoFChainOfResponsibility
 public abstract class RequestHandler {
 
     protected RequestHandler next;

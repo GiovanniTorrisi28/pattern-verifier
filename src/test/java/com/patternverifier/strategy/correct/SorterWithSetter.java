@@ -1,5 +1,8 @@
 package com.patternverifier.strategy.correct;
 
+import com.patternverifier.annotations.GoFStrategy;
+
+@GoFStrategy(strategy = SortStrategy.class)
 public class SorterWithSetter {
     private SortStrategy strategy;
 

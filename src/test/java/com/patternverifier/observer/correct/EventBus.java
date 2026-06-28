@@ -1,8 +1,10 @@
 package com.patternverifier.observer.correct;
 
+import com.patternverifier.annotations.GoFObserver;
 import java.util.ArrayList;
 import java.util.List;
 
+@GoFObserver(observer = EventListener.class)
 public class EventBus {
     private List<EventListener> listeners = new ArrayList<>();
 

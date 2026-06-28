@@ -1,5 +1,8 @@
 package com.patternverifier.adapter.correct;
 
+import com.patternverifier.annotations.GoFAdapter;
+
+@GoFAdapter(adaptee = LegacySocket.class, target = ModernSocket.class)
 public class SocketAdapter implements ModernSocket {
 
     private LegacySocket legacySocket;

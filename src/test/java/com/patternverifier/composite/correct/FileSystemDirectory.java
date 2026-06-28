@@ -1,8 +1,10 @@
 package com.patternverifier.composite.correct;
 
+import com.patternverifier.annotations.GoFComposite;
 import java.util.ArrayList;
 import java.util.List;
 
+@GoFComposite(component = FileSystemItem.class)
 public class FileSystemDirectory implements FileSystemItem {
 
     private final String name;

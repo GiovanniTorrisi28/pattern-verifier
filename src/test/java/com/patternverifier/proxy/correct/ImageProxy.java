@@ -1,5 +1,8 @@
 package com.patternverifier.proxy.correct;
 
+import com.patternverifier.annotations.GoFProxy;
+
+@GoFProxy(subject = Image.class, realSubject = RealImage.class)
 public class ImageProxy implements Image {
 
     private Image subject;

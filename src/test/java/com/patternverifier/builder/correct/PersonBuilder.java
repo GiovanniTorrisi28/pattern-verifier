@@ -1,5 +1,8 @@
 package com.patternverifier.builder.correct;
 
+import com.patternverifier.annotations.GoFBuilder;
+
+@GoFBuilder(product = Person.class)
 public class PersonBuilder {
     private String name;
     private int age;
