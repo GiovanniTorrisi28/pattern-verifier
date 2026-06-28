@@ -30,6 +30,14 @@
             <version>5.11.0</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- ArchUnit — confronto con il nostro tool (Fase 4 tesi) -->
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <version>1.3.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
