@@ -51,4 +51,48 @@
         </plugins>
     </build>
 
+    <profiles>
+        <!-- Attivato solo per riprodurre la valutazione su JHotDraw 5.1 (Fase 5 tesi):
+             mvnw test -P jhotdraw-evaluation
+             Tenuto separato dalla build di default perché la dipendenza JHotDraw non è
+             su Maven Central e va installata in locale — vedi README.md, sezione
+             "Riprodurre la valutazione su JHotDraw 5.1". Senza questo profilo attivo,
+             `mvnw test` compila ed esegue solo i test principali del tool, senza
+             richiedere nulla di tutto questo. -->
+        <profile>
+            <id>jhotdraw-evaluation</id>
+            <dependencies>
+                <dependency>
+                    <groupId>ch.ifa.draw</groupId>
+                    <artifactId>jhotdraw</artifactId>
+                    <version>5.1</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>3.6.0</version>
+                        <executions>
+                            <execution>
+                                <id>add-jhotdraw-test-source</id>
+                                <phase>generate-test-sources</phase>
+                                <goals>
+                                    <goal>add-test-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>src/test/java-jhotdraw</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>

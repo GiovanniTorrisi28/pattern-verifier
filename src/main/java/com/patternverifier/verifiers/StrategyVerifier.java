@@ -45,6 +45,14 @@ public class StrategyVerifier {
     }
 
     private void checkContextHasStrategyField(List<String> violations) {
+        if (context.isInterface()) {
+            violations.add(context.getSimpleName()
+                    + " è un'interfaccia — non può dichiarare un campo istanza di tipo "
+                    + strategy.getSimpleName()
+                    + ": il controllo sul campo non è applicabile a un'interfaccia,"
+                    + " verificare le classi concrete che la implementano");
+            return;
+        }
         String strategyName = strategy.getClassName();
         boolean hasField = context.getFields().stream()
                 .anyMatch(f -> f.getTypeName().equals(strategyName));

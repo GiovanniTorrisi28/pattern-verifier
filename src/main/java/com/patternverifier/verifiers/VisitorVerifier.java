@@ -82,7 +82,8 @@ public class VisitorVerifier {
     private void checkConcreteVisitorImplementsVisitor(List<String> violations) {
         String visitorName = visitorInterface.getClassName();
         boolean connected = concreteVisitor.getInterfaces().contains(visitorName)
-                || visitorName.equals(concreteVisitor.getSuperClassName());
+                || visitorName.equals(concreteVisitor.getSuperClassName())
+                || concreteVisitor.isDescendantOf(visitorName);
         if (!connected) {
             violations.add(concreteVisitor.getSimpleName()
                     + " non implementa né estende "

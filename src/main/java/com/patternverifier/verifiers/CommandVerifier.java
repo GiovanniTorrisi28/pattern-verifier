@@ -60,7 +60,8 @@ public class CommandVerifier {
     private void checkConcreteCommandImplementsCommand(List<String> violations) {
         String commandName = command.getClassName();
         boolean connected = concreteCommand.getInterfaces().contains(commandName)
-                || commandName.equals(concreteCommand.getSuperClassName());
+                || commandName.equals(concreteCommand.getSuperClassName())
+                || concreteCommand.isDescendantOf(commandName);
         if (!connected) {
             violations.add(concreteCommand.getSimpleName()
                     + " non implementa né estende "

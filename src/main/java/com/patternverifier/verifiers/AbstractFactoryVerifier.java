@@ -54,7 +54,8 @@ public class AbstractFactoryVerifier {
     private void checkConcreteFactoryImplementsAbstractFactory(List<String> violations) {
         String abstractName = abstractFactory.getClassName();
         boolean connected = concreteFactory.getInterfaces().contains(abstractName)
-                || abstractName.equals(concreteFactory.getSuperClassName());
+                || abstractName.equals(concreteFactory.getSuperClassName())
+                || concreteFactory.isDescendantOf(abstractName);
         if (!connected) {
             violations.add(concreteFactory.getSimpleName()
                     + " non implementa né estende "

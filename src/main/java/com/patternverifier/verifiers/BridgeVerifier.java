@@ -62,7 +62,8 @@ public class BridgeVerifier {
     private void checkAbstractionDoesNotImplementImplementor(List<String> violations) {
         String implementorName = implementor.getClassName();
         boolean sameHierarchy = abstraction.getInterfaces().contains(implementorName)
-                || implementorName.equals(abstraction.getSuperClassName());
+                || implementorName.equals(abstraction.getSuperClassName())
+                || abstraction.isDescendantOf(implementorName);
         if (sameHierarchy) {
             violations.add(abstraction.getSimpleName()
                     + " implementa o estende "

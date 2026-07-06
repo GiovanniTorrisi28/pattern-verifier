@@ -22,15 +22,30 @@ import java.io.InputStream;
  * principale chiama un metodo helper privato che a sua volta chiama il tipo
  * target, la chiamata viene rilevata perché entrambi i metodi appartengono
  * alla stessa classe e vengono scansionati.
+ *
+ * <p>Risale inoltre la gerarchia delle superclassi se la classe analizzata non
+ * contiene la chiamata: su codice reale la delega può essere implementata in una
+ * superclasse comune e mai sovrascritta dalla sottoclasse concreta passata al
+ * verifier (es. JHotDraw: {@code CompositeFigure.draw()} invoca metodi su {@code
+ * Component}, ma {@code GroupFigure} — sottoclasse concreta — non sovrascrive
+ * {@code draw()}). Si ferma prima di java.lang.Object e delle classi di libreria
+ * (pacchetti java. e javax.), stessa regola usata da {@link ClassAnalyzer}.
  */
 public class MethodInvocationAnalyzer extends ClassVisitor {
 
     private final String targetTypeInternal;
     private boolean found = false;
+    private String superClassInternal;
 
     private MethodInvocationAnalyzer(String targetTypeInternal) {
         super(Opcodes.ASM9);
         this.targetTypeInternal = targetTypeInternal;
+    }
+
+    @Override
+    public void visit(int version, int access, String name, String signature,
+                      String superName, String[] interfaces) {
+        this.superClassInternal = superName;
     }
 
     @Override
@@ -72,26 +87,79 @@ public class MethodInvocationAnalyzer extends ClassVisitor {
     }
 
     /**
-     * Ritorna true se la classe identificata da className contiene almeno
-     * una chiamata a un metodo (INVOKEVIRTUAL o INVOKEINTERFACE) il cui
+     * Ritorna true se la classe identificata da className, o una delle sue superclassi,
+     * contiene almeno una chiamata a un metodo (INVOKEVIRTUAL o INVOKEINTERFACE) il cui
      * receiver è di tipo targetTypeName.
      *
      * @param className      nome fully-qualified della classe da analizzare
      * @param targetTypeName nome fully-qualified del tipo target (es. "com.example.LightState")
      */
     public static boolean invokesMethodsOn(String className, String targetTypeName) {
-        String resourcePath = className.replace('.', '/') + ".class";
         String targetInternal = targetTypeName.replace('.', '/');
+
+        ScanResult current = scanOneClass(className, targetInternal, true);
+        if (current.found) {
+            return true;
+        }
+
+        String superClassName = current.superClassName;
+        while (superClassName != null && !isOutOfHierarchyScope(superClassName)) {
+            ScanResult ancestor = scanOneClass(superClassName, targetInternal, false);
+            if (ancestor == null) {
+                break; // superclasse non caricabile (es. libreria esterna non sul classpath): ci si ferma qui
+            }
+            if (ancestor.found) {
+                return true;
+            }
+            superClassName = ancestor.superClassName;
+        }
+        return false;
+    }
+
+    /**
+     * Legge il bytecode di una classe e la scansiona per invocazioni sul tipo target.
+     *
+     * @param required se true, l'assenza del bytecode è un errore (usato per la classe
+     *                 principale passata dal chiamante); se false, ritorna null e lascia
+     *                 che invokesMethodsOn si fermi silenziosamente (usato per gli antenati)
+     */
+    private static ScanResult scanOneClass(String className, String targetInternal, boolean required) {
+        String resourcePath = className.replace('.', '/') + ".class";
         try (InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream(resourcePath)) {
             if (is == null) {
-                throw new IllegalArgumentException("Bytecode non trovato per: " + className);
+                if (required) {
+                    throw new IllegalArgumentException("Bytecode non trovato per: " + className);
+                }
+                return null;
             }
             ClassReader reader = new ClassReader(is);
             MethodInvocationAnalyzer analyzer = new MethodInvocationAnalyzer(targetInternal);
             reader.accept(analyzer, ClassReader.SKIP_FRAMES);
-            return analyzer.found;
+            String superFullyQualified = analyzer.superClassInternal != null
+                    ? analyzer.superClassInternal.replace('/', '.')
+                    : null;
+            return new ScanResult(analyzer.found, superFullyQualified);
         } catch (IOException e) {
-            throw new RuntimeException("Errore nella lettura del bytecode di " + className, e);
+            if (required) {
+                throw new RuntimeException("Errore nella lettura del bytecode di " + className, e);
+            }
+            return null;
+        }
+    }
+
+    private static boolean isOutOfHierarchyScope(String className) {
+        return className.equals("java.lang.Object")
+                || className.startsWith("java.")
+                || className.startsWith("javax.");
+    }
+
+    private static class ScanResult {
+        final boolean found;
+        final String superClassName;
+
+        ScanResult(boolean found, String superClassName) {
+            this.found = found;
+            this.superClassName = superClassName;
         }
     }
 }

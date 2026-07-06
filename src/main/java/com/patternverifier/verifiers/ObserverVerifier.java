@@ -9,10 +9,13 @@ import java.util.Set;
 
 public class ObserverVerifier {
 
+    // Vector è incluso: implementa List dal JDK 1.2, ed è la collezione usata
+    // convenzionalmente nel codice precedente al Collections Framework (es. JHotDraw, 1997).
     private static final Set<String> COLLECTION_TYPES = Set.of(
             "java.util.List", "java.util.ArrayList", "java.util.LinkedList",
             "java.util.Set", "java.util.HashSet", "java.util.LinkedHashSet", "java.util.TreeSet",
-            "java.util.Collection", "java.util.Queue", "java.util.Deque", "java.util.ArrayDeque"
+            "java.util.Collection", "java.util.Queue", "java.util.Deque", "java.util.ArrayDeque",
+            "java.util.Vector"
     );
 
     private final ClassMetadata subject;

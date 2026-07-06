@@ -49,6 +49,14 @@ public class StateVerifier {
     }
 
     private void checkContextHasStateField(List<String> violations) {
+        if (context.isInterface()) {
+            violations.add(context.getSimpleName()
+                    + " è un'interfaccia — non può dichiarare un campo istanza di tipo "
+                    + state.getSimpleName()
+                    + ": il controllo sul campo non è applicabile a un'interfaccia,"
+                    + " verificare le classi concrete che la implementano");
+            return;
+        }
         String stateName = state.getClassName();
         boolean found = context.getFields().stream()
                 .anyMatch(f -> f.getTypeName().equals(stateName));
