@@ -35,10 +35,16 @@ public class DecoratorVerifier {
     }
 
     private void checkDecoratorImplementsComponent(List<String> violations) {
-        if (!decorator.getInterfaces().contains(component.getClassName())) {
+        // Il Component GoF è spesso una classe astratta (non solo un'interfaccia): si accetta sia
+        // l'implementazione di un'interfaccia sia l'estensione di una superclasse a qualsiasi livello.
+        String componentName = component.getClassName();
+        boolean conforms = decorator.getInterfaces().contains(componentName)
+                || componentName.equals(decorator.getSuperClassName())
+                || decorator.isDescendantOf(componentName);
+        if (!conforms) {
             violations.add(
-                decorator.getSimpleName() + " non implementa l'interfaccia " + component.getSimpleName() +
-                " — il Decorator deve implementare la stessa interfaccia del Component"
+                decorator.getSimpleName() + " non implementa né estende " + component.getSimpleName() +
+                " — il Decorator deve conformarsi allo stesso tipo (interfaccia o classe astratta) del Component"
             );
         }
     }

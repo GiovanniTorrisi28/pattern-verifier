@@ -1,6 +1,7 @@
 package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
+import com.patternverifier.core.MethodInvocationAnalyzer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +19,7 @@ public class ChainOfResponsibilityVerifier {
         checkHandlerIsAbstract(violations);
         checkHandlerHasSelfReferenceField(violations);
         checkHandlerHasHandleMethod(violations);
+        checkHandlerInvokesSuccessor(violations);
         return violations;
     }
 
@@ -58,6 +60,23 @@ public class ChainOfResponsibilityVerifier {
             violations.add(handler.getSimpleName()
                     + " non ha un metodo di gestione con naming convention"
                     + " Chain of Responsibility (handle*, process*, canHandle*, execute*)");
+        }
+    }
+
+    // Verifica che l'Handler inoltri realmente la richiesta al successore, invocando un
+    // metodo su un'istanza del proprio stesso tipo (il campo self-reference). Condizionale:
+    // se Handler è astratto/interfaccia (il caso GoF più comune) il corpo reale dell'inoltro
+    // è nella ConcreteHandler, non passata al verifier — si salta per evitare falsi negativi,
+    // stessa idioma già usata da VisitorVerifier.checkElementCallsVisitorMethods.
+    private void checkHandlerInvokesSuccessor(List<String> violations) {
+        if (handler.isAbstract() || handler.isInterface()) {
+            return;
+        }
+        if (!MethodInvocationAnalyzer.invokesMethodsOn(handler.getClassName(), handler.getClassName())) {
+            violations.add(handler.getSimpleName()
+                    + " non invoca mai metodi su un'istanza del proprio stesso tipo"
+                    + " — il Handler deve inoltrare la richiesta al successore nella catena"
+                    + " quando non la gestisce direttamente");
         }
     }
 }

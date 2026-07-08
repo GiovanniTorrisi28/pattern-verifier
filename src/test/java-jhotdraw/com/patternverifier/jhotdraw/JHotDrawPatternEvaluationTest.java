@@ -116,10 +116,16 @@ class JHotDrawPatternEvaluationTest {
 
     // ==================================================================================
     // Adapter — istanza #73 (21 classi "adapter"), Adaptee = Figure, Target = Handle.
-    // 13 passano; 8 falliscono su "non delega mai all'Adaptee" — pur ereditando da
-    // AbstractHandle la stessa struttura (campo Figure, interfaccia Handle), la delega
-    // comportamentale dipende dal metodo specifico che ciascuna sottoclasse sovrascrive:
-    // non tutte le Handle interrogano la Figure per calcolare la propria posizione.
+    // 18 passano; 3 falliscono su "non delega mai all'Adaptee". Le 3 (LocatorHandle,
+    // NullHandle, GroupHandle) delegano al Figure passandolo come ARGOMENTO a un Locator
+    // (fLocator.locate(owner())): la delega attraversa un collaboratore terzo, non un receiver
+    // di tipo Figure/sottotipo, quindi resta invisibile a MethodInvocationAnalyzer.
+    //
+    // Fino al fix di assegnabilità del 2026-07-04, altre 5 Handle (FontSizeHandle, PolyLineHandle,
+    // PolygonHandle, PolygonScaleHandle, RadiusHandle) fallivano qui: delegano al proprio Figure
+    // tramite un cast a un sottotipo (TextFigure, PolyLineFigure, ...) necessario per invocare
+    // metodi non esposti da Figure. Il vecchio confronto per uguaglianza esatta del tipo non
+    // riconosceva quelle chiamate; ora TypeHierarchy.isAssignable le riconosce e le 5 passano.
     // ==================================================================================
 
     @Tag("pmart")
@@ -146,7 +152,13 @@ class JHotDrawPatternEvaluationTest {
                 forName("CH.ifa.draw.standard.SouthHandle"),
                 forName("CH.ifa.draw.standard.SouthWestHandle"),
                 forName("CH.ifa.draw.standard.WestHandle"),
-                forName("CH.ifa.draw.contrib.TriangleRotationHandle")
+                forName("CH.ifa.draw.contrib.TriangleRotationHandle"),
+                // Recuperate dal fix di assegnabilità del 2026-07-04 (delega via cast a sottotipo):
+                CH.ifa.draw.figures.FontSizeHandle.class,
+                CH.ifa.draw.figures.PolyLineHandle.class,
+                CH.ifa.draw.contrib.PolygonHandle.class,
+                forName("CH.ifa.draw.contrib.PolygonScaleHandle"),
+                forName("CH.ifa.draw.figures.RadiusHandle")
         );
     }
 
@@ -162,15 +174,12 @@ class JHotDrawPatternEvaluationTest {
     }
 
     static Stream<Class<?>> adapterFailing() {
+        // Le 3 che restano: delegano al Figure passandolo come argomento a un Locator
+        // (fLocator.locate(owner())), non invocando un metodo su un receiver Figure/sottotipo.
         return Stream.of(
                 CH.ifa.draw.standard.LocatorHandle.class,
-                CH.ifa.draw.figures.FontSizeHandle.class,
                 CH.ifa.draw.standard.NullHandle.class,
-                forName("CH.ifa.draw.figures.GroupHandle"),
-                CH.ifa.draw.figures.PolyLineHandle.class,
-                CH.ifa.draw.contrib.PolygonHandle.class,
-                forName("CH.ifa.draw.contrib.PolygonScaleHandle"),
-                forName("CH.ifa.draw.figures.RadiusHandle")
+                forName("CH.ifa.draw.figures.GroupHandle")
         );
     }
 
@@ -290,7 +299,11 @@ class JHotDrawPatternEvaluationTest {
     }
 
     // Strategy — istanza #91 Locator: 3/4 passano. PolygonHandle, LocatorConnector,
-    // LocatorHandle hanno un campo Locator; TextFigure no (probabile sovra-inclusione P-MARt).
+    // LocatorHandle hanno un campo Locator; TextFigure fallisce, ma NON per assenza di relazione:
+    // dopo il fix di assegnabilità del 2026-07-04 il tool riconosce il suo campo OffsetLocator
+    // (sottotipo di Locator) e la delega; fallisce solo perché costruisce OffsetLocator
+    // internamente e non riceve mai un Locator via setter/costruttore (nessuna iniezione esterna,
+    // stesso caso di State/SelectionTool).
     // Nota: FN7 originariamente previsto (LocatorHandle fallisce per mancanza di setter) era
     // sbagliato — StrategyVerifier accetta setter OPPURE costruttore, LocatorHandle passa.
 
@@ -311,21 +324,29 @@ class JHotDrawPatternEvaluationTest {
         );
     }
 
-    /** Sovra-inclusione P-MARt: TextFigure non ha un campo di tipo Locator. */
+    /**
+     * TextFigure ha davvero una relazione Strategy/Locator (campo OffsetLocator, sottotipo di
+     * Locator, e delega — riconosciuti dopo il fix di assegnabilità del 2026-07-04); fallisce
+     * solo perché non ha un punto di iniezione esterno del Locator (lo costruisce internamente).
+     */
     @Tag("pmart")
     @org.junit.jupiter.api.Test
-    void strategyLocatorTextFigureShouldFailNoField() {
+    void strategyLocatorTextFigureShouldFailNoInjection() {
         assertThrows(AssertionError.class, () ->
                 PatternAssertions.assertThat(CH.ifa.draw.figures.TextFigure.class)
                         .implementsStrategy()
                         .withStrategyInterface(CH.ifa.draw.framework.Locator.class));
     }
 
-    // Strategy — istanza #89 Connector: SCOPERTA NUOVA. Solo LineConnection e
-    // ChangeConnectionHandle (2/12) hanno davvero un campo Connector dedicato. Le altre 10
-    // classi elencate da P-MARt come "context" probabilmente USANO un Connector in qualche
-    // metodo (es. via connectorAt()) senza MANTENERLO come proprio stato — una distinzione
-    // che il nostro verifier fa correttamente ma il ruolo P-MARt non cattura.
+    // Strategy — istanza #89 Connector: SCOPERTA NUOVA. LineConnection e
+    // ChangeConnectionHandle hanno un campo Connector dedicato. ConnectionTool non ha il campo
+    // iniettabile dall'esterno, ma ha metodi propri (findConnector(), getStartConnector(),
+    // getEndConnector(), getTarget()) che producono/espongono un Connector — dopo il fix di
+    // relax dell'iniezione del 2026-07-04 (metodo factory interno DICHIARATO dalla classe),
+    // questi bastano a soddisfare il controllo. Le altre 8 classi elencate da P-MARt come
+    // "context" USANO un Connector in qualche metodo (es. via connectorAt()) senza MANTENERLO
+    // né produrlo come proprio stato — una distinzione che il nostro verifier fa correttamente
+    // ma il ruolo P-MARt non cattura.
 
     @Tag("pmart")
     @ParameterizedTest
@@ -339,7 +360,9 @@ class JHotDrawPatternEvaluationTest {
     static Stream<Class<?>> strategyConnectorPassing() {
         return Stream.of(
                 CH.ifa.draw.figures.LineConnection.class,
-                CH.ifa.draw.standard.ChangeConnectionHandle.class
+                CH.ifa.draw.standard.ChangeConnectionHandle.class,
+                // Recuperato dal fix di relax dell'iniezione del 2026-07-04 (metodo factory interno):
+                CH.ifa.draw.standard.ConnectionTool.class
         );
     }
 
@@ -363,7 +386,6 @@ class JHotDrawPatternEvaluationTest {
                 CH.ifa.draw.standard.AbstractFigure.class,
                 CH.ifa.draw.standard.DecoratorFigure.class,
                 CH.ifa.draw.framework.ConnectionFigure.class,
-                CH.ifa.draw.standard.ConnectionTool.class,
                 CH.ifa.draw.standard.ConnectionHandle.class
         );
     }
@@ -385,11 +407,21 @@ class JHotDrawPatternEvaluationTest {
     }
 
     // ==================================================================================
-    // State — istanza #87 StandardDrawingView, istanza #88 SelectionTool: SCOPERTE NUOVE,
-    // entrambe falliscono. Vedi note_valutazione_jhotdraw.md per la spiegazione completa:
+    // State — istanza #87 StandardDrawingView: fallisce. istanza #88 SelectionTool: passa.
+    // Vedi note_valutazione_jhotdraw.md per la spiegazione completa.
+    //
     // StandardDrawingView.tool() delega a fEditor.tool() (il vero Context è DrawingEditor,
-    // il Mediator — attribuzione sbagliata sia nostra che di P-MARt); SelectionTool ha il
-    // campo fChild ma nessun metodo di transizione richiamabile dall'esterno.
+    // il Mediator — attribuzione sbagliata sia nostra che di P-MARt). Ha un metodo proprio
+    // (tool()) che restituisce Tool, ma non lo assegna mai a un proprio campo (puro forwarder,
+    // return fEditor.tool()): InternalFactoryAssignmentAnalyzer (2026-07-08) non lo riconosce
+    // come selettore interno, quindi la violazione sulla transizione resta visibile insieme a
+    // quella sul campo — l'istanza fallisce comunque su entrambe.
+    //
+    // SelectionTool ha il campo fChild E tre metodi propri (createHandleTracker(),
+    // createDragTracker(), createAreaTracker()) che costruiscono Tool concreti diversi, scelti in
+    // base al punto cliccato, il cui risultato viene assegnato al campo fChild da mouseDown() —
+    // vera intercambiabilità, orchestrata internamente e realmente conservata come stato. Questo
+    // soddisfa il controllo sulla transizione: SelectionTool PASSA la verifica State.
     // ==================================================================================
 
     @Tag("pmart")
@@ -401,13 +433,18 @@ class JHotDrawPatternEvaluationTest {
                         .withStateInterface(CH.ifa.draw.framework.Tool.class));
     }
 
+    /**
+     * Recuperata dal fix di relax dell'iniezione del 2026-07-04: SelectionTool ha 3 metodi
+     * factory propri (createHandleTracker/createDragTracker/createAreaTracker) che restituiscono
+     * Tool — transizione di stato decisa internamente, non iniettata dall'esterno, ma comunque
+     * un'intercambiabilità reale tra più ConcreteState.
+     */
     @Tag("pmart")
     @org.junit.jupiter.api.Test
-    void stateSelectionToolShouldFailNoExternalTransition() {
-        assertThrows(AssertionError.class, () ->
-                PatternAssertions.assertThat(CH.ifa.draw.standard.SelectionTool.class)
-                        .implementsState()
-                        .withStateInterface(CH.ifa.draw.framework.Tool.class));
+    void stateSelectionToolShouldPass() {
+        PatternAssertions.assertThat(CH.ifa.draw.standard.SelectionTool.class)
+                .implementsState()
+                .withStateInterface(CH.ifa.draw.framework.Tool.class);
     }
 
     // ==================================================================================

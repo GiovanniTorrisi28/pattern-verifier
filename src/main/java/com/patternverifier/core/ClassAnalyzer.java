@@ -41,7 +41,7 @@ public class ClassAnalyzer extends ClassVisitor {
     @Override
     public FieldVisitor visitField(int access, String name, String descriptor,
                                    String signature, Object value) {
-        fields.add(new FieldInfo(name, descriptor, access));
+        fields.add(new FieldInfo(name, descriptor, access, signature));
         return null; // non ci interessa visitare il contenuto del campo
     }
 

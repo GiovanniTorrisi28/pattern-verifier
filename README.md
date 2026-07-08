@@ -50,9 +50,10 @@ Al primo avvio Maven Wrapper scarica Maven e le dipendenze automaticamente (circ
 
 Output atteso:
 ```
-[INFO] Tests run: 139, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 142, Failures: 0, Errors: 0, Skipped: 1
 [INFO] BUILD SUCCESS
 ```
+(Lo `Skipped: 1` è un test `@Disabled` con spiegazione — un limite fondamentale di ArchUnit documentato nel confronto di Fase 4, non un test rotto.)
 
 Per eseguire i test di un singolo pattern:
 ```bash
@@ -70,7 +71,7 @@ autorevolezza.
 
 JHotDraw 5.1 non è su Maven Central (è un progetto del 1997 non più mantenuto): il sorgente va
 scaricato, compilato e installato in locale prima di eseguire i test di valutazione. Questi passi
-sono **necessari solo per la Fase 5** — i 139 test principali del tool (sezione sopra) girano con
+sono **necessari solo per la Fase 5** — i 142 test principali del tool (sezione sopra) girano con
 `mvnw test` senza nulla di tutto questo: la dipendenza JHotDraw e i test che la usano sono isolati
 nel profilo Maven `jhotdraw-evaluation` (attivo solo con `-P jhotdraw-evaluation`), non nella
 build di default.

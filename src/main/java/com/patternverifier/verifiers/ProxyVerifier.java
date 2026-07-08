@@ -39,10 +39,15 @@ public class ProxyVerifier {
     }
 
     private void checkProxyImplementsSubject(List<String> violations) {
-        if (!proxy.getInterfaces().contains(subject.getClassName())) {
+        // Il Subject GoF può essere un'interfaccia o una classe astratta.
+        String subjectName = subject.getClassName();
+        boolean conforms = proxy.getInterfaces().contains(subjectName)
+                || subjectName.equals(proxy.getSuperClassName())
+                || proxy.isDescendantOf(subjectName);
+        if (!conforms) {
             violations.add(
-                proxy.getSimpleName() + " non implementa l'interfaccia " + subject.getSimpleName() +
-                " — il Proxy deve implementare la stessa interfaccia del Subject"
+                proxy.getSimpleName() + " non implementa né estende " + subject.getSimpleName() +
+                " — il Proxy deve conformarsi allo stesso tipo (interfaccia o classe astratta) del Subject"
             );
         }
     }
@@ -62,10 +67,14 @@ public class ProxyVerifier {
     }
 
     private void checkRealSubjectImplementsSubject(List<String> violations) {
-        if (!realSubject.getInterfaces().contains(subject.getClassName())) {
+        String subjectName = subject.getClassName();
+        boolean conforms = realSubject.getInterfaces().contains(subjectName)
+                || subjectName.equals(realSubject.getSuperClassName())
+                || realSubject.isDescendantOf(subjectName);
+        if (!conforms) {
             violations.add(
-                realSubject.getSimpleName() + " non implementa " + subject.getSimpleName() +
-                " — il RealSubject deve implementare la stessa interfaccia del Proxy"
+                realSubject.getSimpleName() + " non implementa né estende " + subject.getSimpleName() +
+                " — il RealSubject deve conformarsi allo stesso tipo (interfaccia o classe astratta) del Subject"
             );
         }
     }

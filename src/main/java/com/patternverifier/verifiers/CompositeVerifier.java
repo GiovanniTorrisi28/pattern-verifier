@@ -1,23 +1,13 @@
 package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
-import com.patternverifier.core.FieldInfo;
+import com.patternverifier.core.CollectionTypes;
 import com.patternverifier.core.MethodInvocationAnalyzer;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 public class CompositeVerifier {
-
-    // Tipi di collezione riconosciuti come campi validi per contenere i figli.
-    // Vector è incluso: implementa List dal JDK 1.2, ed è la collezione usata
-    // convenzionalmente nel codice precedente al Collections Framework (es. JHotDraw, 1997).
-    private static final Set<String> COLLECTION_TYPES = Set.of(
-        "java.util.List",       "java.util.ArrayList",    "java.util.LinkedList",
-        "java.util.Set",        "java.util.HashSet",      "java.util.LinkedHashSet",
-        "java.util.TreeSet",    "java.util.Collection",   "java.util.Vector"
-    );
 
     private final ClassMetadata composite;
     private final ClassMetadata component;
@@ -46,25 +36,30 @@ public class CompositeVerifier {
     }
 
     private void checkCompositeImplementsComponent(List<String> violations) {
-        if (!composite.getInterfaces().contains(component.getClassName())) {
+        // Il Component GoF è spesso una classe astratta (non solo un'interfaccia).
+        String componentName = component.getClassName();
+        boolean conforms = composite.getInterfaces().contains(componentName)
+                || componentName.equals(composite.getSuperClassName())
+                || composite.isDescendantOf(componentName);
+        if (!conforms) {
             violations.add(
-                composite.getSimpleName() + " non implementa l'interfaccia " + component.getSimpleName() +
-                " — il Composite deve implementare la stessa interfaccia del Component"
+                composite.getSimpleName() + " non implementa né estende " + component.getSimpleName() +
+                " — il Composite deve conformarsi allo stesso tipo (interfaccia o classe astratta) del Component"
             );
         }
     }
 
     private void checkHasCollectionField(List<String> violations) {
-        // ASM vede solo il tipo raw della collezione (type erasure elimina il tipo generico).
-        // Verifichiamo che esista almeno un campo di tipo Collection noto.
+        // Verifica che esista un campo Collection il cui tipo generico (se dichiarato) sia
+        // assegnabile al Component — non una Collection qualunque (vedi CollectionTypes.isCollectionOf).
+        String componentName = component.getClassName();
         boolean hasCollectionField = composite.getFields().stream()
-                .map(FieldInfo::getTypeName)
-                .anyMatch(COLLECTION_TYPES::contains);
+                .anyMatch(f -> CollectionTypes.isCollectionOf(f, componentName));
         if (!hasCollectionField) {
             violations.add(
-                composite.getSimpleName() + " non ha un campo di tipo Collection (List, Set, ecc.) " +
-                "— il Composite deve mantenere una collezione di figli di tipo " + component.getSimpleName() +
-                " (nota: il tipo generico non è verificabile per via della type erasure)"
+                composite.getSimpleName() + " non ha un campo di tipo Collection di " + component.getSimpleName() +
+                " — il Composite deve mantenere una collezione di figli di tipo " + component.getSimpleName() +
+                " (il tipo generico è verificato solo se il campo dichiara i generics esplicitamente)"
             );
         }
     }

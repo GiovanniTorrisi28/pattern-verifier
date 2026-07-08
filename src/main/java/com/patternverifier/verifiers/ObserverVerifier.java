@@ -1,22 +1,13 @@
 package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
+import com.patternverifier.core.CollectionTypes;
 import com.patternverifier.core.MethodInvocationAnalyzer;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 public class ObserverVerifier {
-
-    // Vector è incluso: implementa List dal JDK 1.2, ed è la collezione usata
-    // convenzionalmente nel codice precedente al Collections Framework (es. JHotDraw, 1997).
-    private static final Set<String> COLLECTION_TYPES = Set.of(
-            "java.util.List", "java.util.ArrayList", "java.util.LinkedList",
-            "java.util.Set", "java.util.HashSet", "java.util.LinkedHashSet", "java.util.TreeSet",
-            "java.util.Collection", "java.util.Queue", "java.util.Deque", "java.util.ArrayDeque",
-            "java.util.Vector"
-    );
 
     private final ClassMetadata subject;
     private final ClassMetadata observer;
@@ -68,14 +59,16 @@ public class ObserverVerifier {
         }
     }
 
-    // Stessa strategia del Composite: type erasure impedisce di verificare il tipo generico,
-    // quindi si controlla che il campo sia una Collection nota.
+    // Verifica che il campo Collection, quando dichiara i generics esplicitamente, contenga
+    // davvero il tipo Observer — non una Collection qualunque (vedi CollectionTypes.isCollectionOf).
     private void checkSubjectHasObserverCollection(List<String> violations) {
+        String observerName = observer.getClassName();
         boolean found = subject.getFields().stream()
-                .anyMatch(f -> COLLECTION_TYPES.contains(f.getTypeName()));
+                .anyMatch(f -> CollectionTypes.isCollectionOf(f, observerName));
         if (!found) {
             violations.add(subject.getSimpleName()
-                    + " non ha un campo Collection per mantenere la lista degli observer"
+                    + " non ha un campo Collection di " + observer.getSimpleName()
+                    + " per mantenere la lista degli observer"
                     + " — il Subject deve gestire una collezione di " + observer.getSimpleName());
         }
     }

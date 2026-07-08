@@ -5,9 +5,9 @@ import com.patternverifier.core.ClassAnalyzer;
 import com.patternverifier.core.ClassMetadata;
 import com.patternverifier.verifiers.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Seconda API pubblica del tool: scansiona le annotazioni @GoFXxx presenti sulle classi
@@ -16,7 +16,10 @@ import java.util.stream.Collectors;
  * Uso tipico in un test JUnit 5:
  *   PatternAnnotationScanner.verify(PrintCommand.class, EventBus.class, TrafficLight.class);
  *
- * Le classi prive di annotazioni @GoFXxx vengono ignorate silenziosamente.
+ * Le classi prive di annotazioni @GoFXxx vengono ignorate silenziosamente. Una classe può
+ * dichiarare più annotazioni @GoFXxx contemporaneamente (es. una figura di JHotDraw che gioca
+ * sia il ruolo di ConcreteSubject in Observer sia di ConcreteCreator in Factory Method): in tal
+ * caso vengono verificati TUTTI i ruoli dichiarati e le violazioni aggregate — non solo il primo.
  */
 public class PatternAnnotationScanner {
 
@@ -34,56 +37,61 @@ public class PatternAnnotationScanner {
         }
     }
 
+    // Verifica TUTTE le annotazioni @GoFXxx presenti sulla classe (non solo la prima): una
+    // classe può giocare più ruoli di pattern contemporaneamente, e le violazioni di ciascun
+    // ruolo vanno tutte segnalate. I messaggi dei verifier sono già auto-descrittivi del pattern
+    // ("il Singleton deve...", "il Decorator deve...") quindi restano distinguibili nel report.
     private static List<String> scanClass(Class<?> clazz) {
+        List<String> violations = new ArrayList<>();
         if (clazz.isAnnotationPresent(GoFSingleton.class)) {
-            return new SingletonVerifier(ClassAnalyzer.analyze(clazz)).verify();
+            violations.addAll(new SingletonVerifier(ClassAnalyzer.analyze(clazz)).verify());
         }
         if (clazz.isAnnotationPresent(GoFFactoryMethod.class)) {
-            return scanFactoryMethod(clazz, clazz.getAnnotation(GoFFactoryMethod.class));
+            violations.addAll(scanFactoryMethod(clazz, clazz.getAnnotation(GoFFactoryMethod.class)));
         }
         if (clazz.isAnnotationPresent(GoFAbstractFactory.class)) {
-            return scanAbstractFactory(clazz, clazz.getAnnotation(GoFAbstractFactory.class));
+            violations.addAll(scanAbstractFactory(clazz, clazz.getAnnotation(GoFAbstractFactory.class)));
         }
         if (clazz.isAnnotationPresent(GoFBuilder.class)) {
-            return scanBuilder(clazz, clazz.getAnnotation(GoFBuilder.class));
+            violations.addAll(scanBuilder(clazz, clazz.getAnnotation(GoFBuilder.class)));
         }
         if (clazz.isAnnotationPresent(GoFTemplateMethod.class)) {
-            return scanTemplateMethod(clazz, clazz.getAnnotation(GoFTemplateMethod.class));
+            violations.addAll(scanTemplateMethod(clazz, clazz.getAnnotation(GoFTemplateMethod.class)));
         }
         if (clazz.isAnnotationPresent(GoFCommand.class)) {
-            return scanCommand(clazz, clazz.getAnnotation(GoFCommand.class));
+            violations.addAll(scanCommand(clazz, clazz.getAnnotation(GoFCommand.class)));
         }
         if (clazz.isAnnotationPresent(GoFChainOfResponsibility.class)) {
-            return new ChainOfResponsibilityVerifier(ClassAnalyzer.analyze(clazz)).verify();
+            violations.addAll(new ChainOfResponsibilityVerifier(ClassAnalyzer.analyze(clazz)).verify());
         }
         if (clazz.isAnnotationPresent(GoFState.class)) {
-            return scanState(clazz, clazz.getAnnotation(GoFState.class));
+            violations.addAll(scanState(clazz, clazz.getAnnotation(GoFState.class)));
         }
         if (clazz.isAnnotationPresent(GoFStrategy.class)) {
-            return scanStrategy(clazz, clazz.getAnnotation(GoFStrategy.class));
+            violations.addAll(scanStrategy(clazz, clazz.getAnnotation(GoFStrategy.class)));
         }
         if (clazz.isAnnotationPresent(GoFDecorator.class)) {
-            return scanDecorator(clazz, clazz.getAnnotation(GoFDecorator.class));
+            violations.addAll(scanDecorator(clazz, clazz.getAnnotation(GoFDecorator.class)));
         }
         if (clazz.isAnnotationPresent(GoFObserver.class)) {
-            return scanObserver(clazz, clazz.getAnnotation(GoFObserver.class));
+            violations.addAll(scanObserver(clazz, clazz.getAnnotation(GoFObserver.class)));
         }
         if (clazz.isAnnotationPresent(GoFProxy.class)) {
-            return scanProxy(clazz, clazz.getAnnotation(GoFProxy.class));
+            violations.addAll(scanProxy(clazz, clazz.getAnnotation(GoFProxy.class)));
         }
         if (clazz.isAnnotationPresent(GoFAdapter.class)) {
-            return scanAdapter(clazz, clazz.getAnnotation(GoFAdapter.class));
+            violations.addAll(scanAdapter(clazz, clazz.getAnnotation(GoFAdapter.class)));
         }
         if (clazz.isAnnotationPresent(GoFBridge.class)) {
-            return scanBridge(clazz, clazz.getAnnotation(GoFBridge.class));
+            violations.addAll(scanBridge(clazz, clazz.getAnnotation(GoFBridge.class)));
         }
         if (clazz.isAnnotationPresent(GoFComposite.class)) {
-            return scanComposite(clazz, clazz.getAnnotation(GoFComposite.class));
+            violations.addAll(scanComposite(clazz, clazz.getAnnotation(GoFComposite.class)));
         }
         if (clazz.isAnnotationPresent(GoFVisitor.class)) {
-            return scanVisitor(clazz, clazz.getAnnotation(GoFVisitor.class));
+            violations.addAll(scanVisitor(clazz, clazz.getAnnotation(GoFVisitor.class)));
         }
-        return List.of();
+        return violations;
     }
 
     private static List<String> scanFactoryMethod(Class<?> clazz, GoFFactoryMethod ann) {

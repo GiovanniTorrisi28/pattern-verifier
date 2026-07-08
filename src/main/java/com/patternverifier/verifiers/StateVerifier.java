@@ -1,7 +1,9 @@
 package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
+import com.patternverifier.core.InternalFactoryAssignmentAnalyzer;
 import com.patternverifier.core.MethodInvocationAnalyzer;
+import com.patternverifier.core.TypeHierarchy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,7 +61,7 @@ public class StateVerifier {
         }
         String stateName = state.getClassName();
         boolean found = context.getFields().stream()
-                .anyMatch(f -> f.getTypeName().equals(stateName));
+                .anyMatch(f -> TypeHierarchy.isAssignable(f.getTypeName(), stateName));
         if (!found) {
             violations.add(context.getSimpleName()
                     + " non ha un campo di tipo "
@@ -77,19 +79,38 @@ public class StateVerifier {
         }
     }
 
-    // Verifica OR: setter esplicito (setState*) oppure qualsiasi metodo che accetta
-    // State come parametro (incluso il costruttore) — copre sia le transizioni
-    // gestite dal Context che quelle gestite dai ConcreteState stessi.
+    // Verifica OR a tre vie: (a) setter esplicito (setState*) o qualsiasi metodo che accetta
+    // State come parametro (incluso il costruttore) — transizione esterna; (b) un metodo
+    // proprio della classe che costruisce/ottiene uno State e lo assegna a un proprio campo —
+    // transizione decisa dal Context stesso. Il testo GoF ammette esplicitamente che sia il
+    // Context a decidere quale stato succeda a quale, non solo l'iniezione esterna: es.
+    // JHotDraw's SelectionTool sceglie tra più "tracker" (Tool concreti) in base al punto
+    // cliccato, tramite metodi factory come createHandleTracker() che restituiscono Tool, il
+    // cui risultato viene assegnato al campo fChild in mouseDown().
+    //
+    // Il caso (b) è verificato da InternalFactoryAssignmentAnalyzer (bytecode: chiamata a un
+    // proprio metodo immediatamente seguita da un'assegnazione a un proprio campo di tipo
+    // assegnabile allo State) — stesso identico controllo di StrategyVerifier.
+    // checkContextHasInjectionPoint, e stesso motivo: non basta che un metodo RESTITUISCA il
+    // tipo giusto (lo fa anche un Factory Method puro, che consegna l'istanza a un chiamante
+    // esterno senza conservarla), serve che il valore sia realmente assegnato come stato della
+    // classe. Distingue SelectionTool (fChild = createHandleTracker(...), genuino) da
+    // StandardDrawingView (tool() è un puro forwarder verso fEditor.tool(), mai un'assegnazione
+    // a un proprio campo — resta correttamente non conforme).
     private void checkContextHasTransitionMethod(List<String> violations) {
         String stateName = state.getClassName();
-        boolean found = context.getMethods().stream()
-                .anyMatch(m -> m.getParameterTypeNames().contains(stateName));
-        if (!found) {
+        boolean hasExternalTransition = context.getMethods().stream()
+                .anyMatch(m -> m.getParameterTypeNames().stream()
+                        .anyMatch(p -> TypeHierarchy.isAssignable(p, stateName)));
+        boolean hasInternalFactory = InternalFactoryAssignmentAnalyzer.storesInvocationResultInField(
+                context.getClassName(), stateName);
+        if (!hasExternalTransition && !hasInternalFactory) {
             violations.add(context.getSimpleName()
                     + " non ha un metodo di transizione che accetti "
                     + state.getSimpleName()
-                    + " come parametro — il Context deve permettere il cambiamento"
-                    + " dello stato corrente (via setter, costruttore o metodo di transizione)");
+                    + " come parametro né un metodo interno che ne restituisca un'istanza"
+                    + " — il Context deve permettere il cambiamento dello stato corrente"
+                    + " (via setter, costruttore, o selezione interna tra più stati concreti)");
         }
     }
 }

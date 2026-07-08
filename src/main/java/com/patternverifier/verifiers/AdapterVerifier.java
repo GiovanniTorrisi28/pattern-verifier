@@ -37,11 +37,17 @@ public class AdapterVerifier {
     }
 
     private void checkAdapterImplementsTarget(List<String> violations) {
-        boolean implements_ = adapter.getInterfaces().contains(target.getClassName());
-        if (!implements_) {
+        // Il Target GoF può essere un'interfaccia o una classe astratta: si accetta sia
+        // l'implementazione di un'interfaccia sia l'estensione di una superclasse (a qualsiasi
+        // livello, via isDescendantOf), coerentemente con gli altri verifier inheritance-aware.
+        String targetName = target.getClassName();
+        boolean implementsTarget = adapter.getInterfaces().contains(targetName)
+                || targetName.equals(adapter.getSuperClassName())
+                || adapter.isDescendantOf(targetName);
+        if (!implementsTarget) {
             violations.add(
-                adapter.getSimpleName() + " non implementa l'interfaccia " + target.getSimpleName() +
-                " — l'Adapter deve implementare la stessa interfaccia del Target"
+                adapter.getSimpleName() + " non implementa né estende " + target.getSimpleName() +
+                " — l'Adapter deve conformarsi allo stesso tipo (interfaccia o classe astratta) del Target"
             );
         }
     }
