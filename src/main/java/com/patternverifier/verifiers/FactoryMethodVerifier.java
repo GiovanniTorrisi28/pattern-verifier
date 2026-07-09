@@ -1,6 +1,7 @@
 package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
+import com.patternverifier.core.TypeHierarchy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,10 +54,7 @@ public class FactoryMethodVerifier {
     }
 
     private void checkConcreteCreatorExtendsCreator(List<String> violations) {
-        boolean connected = creator.getClassName().equals(concreteCreator.getSuperClassName())
-                || concreteCreator.getInterfaces().contains(creator.getClassName())
-                || concreteCreator.isDescendantOf(creator.getClassName());
-        if (!connected) {
+        if (!TypeHierarchy.isAssignable(concreteCreator.getClassName(), creator.getClassName())) {
             violations.add(
                 concreteCreator.getSimpleName() + " non estende né implementa " + creator.getSimpleName() +
                 " — il ConcreteCreator deve estendere il Creator"

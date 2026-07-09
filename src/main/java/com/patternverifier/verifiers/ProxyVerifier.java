@@ -2,6 +2,7 @@ package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
 import com.patternverifier.core.MethodInvocationAnalyzer;
+import com.patternverifier.core.TypeHierarchy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,11 +41,7 @@ public class ProxyVerifier {
 
     private void checkProxyImplementsSubject(List<String> violations) {
         // Il Subject GoF può essere un'interfaccia o una classe astratta.
-        String subjectName = subject.getClassName();
-        boolean conforms = proxy.getInterfaces().contains(subjectName)
-                || subjectName.equals(proxy.getSuperClassName())
-                || proxy.isDescendantOf(subjectName);
-        if (!conforms) {
+        if (!TypeHierarchy.isAssignable(proxy.getClassName(), subject.getClassName())) {
             violations.add(
                 proxy.getSimpleName() + " non implementa né estende " + subject.getSimpleName() +
                 " — il Proxy deve conformarsi allo stesso tipo (interfaccia o classe astratta) del Subject"
@@ -67,11 +64,7 @@ public class ProxyVerifier {
     }
 
     private void checkRealSubjectImplementsSubject(List<String> violations) {
-        String subjectName = subject.getClassName();
-        boolean conforms = realSubject.getInterfaces().contains(subjectName)
-                || subjectName.equals(realSubject.getSuperClassName())
-                || realSubject.isDescendantOf(subjectName);
-        if (!conforms) {
+        if (!TypeHierarchy.isAssignable(realSubject.getClassName(), subject.getClassName())) {
             violations.add(
                 realSubject.getSimpleName() + " non implementa né estende " + subject.getSimpleName() +
                 " — il RealSubject deve conformarsi allo stesso tipo (interfaccia o classe astratta) del Subject"

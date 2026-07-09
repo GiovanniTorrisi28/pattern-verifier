@@ -1,6 +1,7 @@
 package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
+import com.patternverifier.core.TypeHierarchy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,11 +53,7 @@ public class AbstractFactoryVerifier {
     }
 
     private void checkConcreteFactoryImplementsAbstractFactory(List<String> violations) {
-        String abstractName = abstractFactory.getClassName();
-        boolean connected = concreteFactory.getInterfaces().contains(abstractName)
-                || abstractName.equals(concreteFactory.getSuperClassName())
-                || concreteFactory.isDescendantOf(abstractName);
-        if (!connected) {
+        if (!TypeHierarchy.isAssignable(concreteFactory.getClassName(), abstractFactory.getClassName())) {
             violations.add(concreteFactory.getSimpleName()
                     + " non implementa né estende "
                     + abstractFactory.getSimpleName()

@@ -2,6 +2,7 @@ package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
 import com.patternverifier.core.MethodInvocationAnalyzer;
+import com.patternverifier.core.TypeHierarchy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,10 +61,7 @@ public class BridgeVerifier {
     // implementare né estendere Implementor, altrimenti le due gerarchie si sovrappongono
     // e il pattern perde il suo scopo di evoluzione indipendente.
     private void checkAbstractionDoesNotImplementImplementor(List<String> violations) {
-        String implementorName = implementor.getClassName();
-        boolean sameHierarchy = abstraction.getInterfaces().contains(implementorName)
-                || implementorName.equals(abstraction.getSuperClassName())
-                || abstraction.isDescendantOf(implementorName);
+        boolean sameHierarchy = TypeHierarchy.isAssignable(abstraction.getClassName(), implementor.getClassName());
         if (sameHierarchy) {
             violations.add(abstraction.getSimpleName()
                     + " implementa o estende "

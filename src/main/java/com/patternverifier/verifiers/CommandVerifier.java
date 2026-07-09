@@ -2,6 +2,7 @@ package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
 import com.patternverifier.core.MethodInvocationAnalyzer;
+import com.patternverifier.core.TypeHierarchy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,11 +59,7 @@ public class CommandVerifier {
     }
 
     private void checkConcreteCommandImplementsCommand(List<String> violations) {
-        String commandName = command.getClassName();
-        boolean connected = concreteCommand.getInterfaces().contains(commandName)
-                || commandName.equals(concreteCommand.getSuperClassName())
-                || concreteCommand.isDescendantOf(commandName);
-        if (!connected) {
+        if (!TypeHierarchy.isAssignable(concreteCommand.getClassName(), command.getClassName())) {
             violations.add(concreteCommand.getSimpleName()
                     + " non implementa né estende "
                     + command.getSimpleName()

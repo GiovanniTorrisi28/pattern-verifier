@@ -3,6 +3,7 @@ package com.patternverifier.verifiers;
 import com.patternverifier.core.ClassMetadata;
 import com.patternverifier.core.CollectionTypes;
 import com.patternverifier.core.MethodInvocationAnalyzer;
+import com.patternverifier.core.TypeHierarchy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,11 +38,7 @@ public class CompositeVerifier {
 
     private void checkCompositeImplementsComponent(List<String> violations) {
         // Il Component GoF è spesso una classe astratta (non solo un'interfaccia).
-        String componentName = component.getClassName();
-        boolean conforms = composite.getInterfaces().contains(componentName)
-                || componentName.equals(composite.getSuperClassName())
-                || composite.isDescendantOf(componentName);
-        if (!conforms) {
+        if (!TypeHierarchy.isAssignable(composite.getClassName(), component.getClassName())) {
             violations.add(
                 composite.getSimpleName() + " non implementa né estende " + component.getSimpleName() +
                 " — il Composite deve conformarsi allo stesso tipo (interfaccia o classe astratta) del Component"

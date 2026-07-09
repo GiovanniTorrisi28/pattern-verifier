@@ -2,6 +2,7 @@ package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
 import com.patternverifier.core.MethodInvocationAnalyzer;
+import com.patternverifier.core.TypeHierarchy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -80,11 +81,7 @@ public class VisitorVerifier {
     }
 
     private void checkConcreteVisitorImplementsVisitor(List<String> violations) {
-        String visitorName = visitorInterface.getClassName();
-        boolean connected = concreteVisitor.getInterfaces().contains(visitorName)
-                || visitorName.equals(concreteVisitor.getSuperClassName())
-                || concreteVisitor.isDescendantOf(visitorName);
-        if (!connected) {
+        if (!TypeHierarchy.isAssignable(concreteVisitor.getClassName(), visitorInterface.getClassName())) {
             violations.add(concreteVisitor.getSimpleName()
                     + " non implementa né estende "
                     + visitorInterface.getSimpleName()

@@ -2,6 +2,7 @@ package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
 import com.patternverifier.core.MethodInvocationAnalyzer;
+import com.patternverifier.core.TypeHierarchy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,13 +36,9 @@ public class DecoratorVerifier {
     }
 
     private void checkDecoratorImplementsComponent(List<String> violations) {
-        // Il Component GoF è spesso una classe astratta (non solo un'interfaccia): si accetta sia
-        // l'implementazione di un'interfaccia sia l'estensione di una superclasse a qualsiasi livello.
-        String componentName = component.getClassName();
-        boolean conforms = decorator.getInterfaces().contains(componentName)
-                || componentName.equals(decorator.getSuperClassName())
-                || decorator.isDescendantOf(componentName);
-        if (!conforms) {
+        // Il Component GoF è spesso una classe astratta (non solo un'interfaccia):
+        // TypeHierarchy.isAssignable copre entrambi i casi.
+        if (!TypeHierarchy.isAssignable(decorator.getClassName(), component.getClassName())) {
             violations.add(
                 decorator.getSimpleName() + " non implementa né estende " + component.getSimpleName() +
                 " — il Decorator deve conformarsi allo stesso tipo (interfaccia o classe astratta) del Component"

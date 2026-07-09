@@ -40,8 +40,9 @@ class InheritanceAwareAnalysisValidationTest {
      * Command), non direttamente. Prima della correzione (2026-07-04), i verifier che
      * confrontavano solo il nome della superclasse diretta (Command, AbstractFactory,
      * Bridge, FactoryMethod, Visitor) segnalavano "non estende Command" — un falso
-     * negativo, non una violazione reale. ClassMetadata.isDescendantOf() ora risale
-     * l'intera catena delle superclassi.
+     * negativo, non una violazione reale. `TypeHierarchy.isAssignable` (dal 2026-07-08
+     * usato anche per questo check, sostituisce `ClassMetadata.isDescendantOf` rimosso
+     * perché diventato ridondante) risale l'intera catena delle superclassi via bytecode.
      */
     @Test
     void copyCommandShouldPassCommandThroughTwoLevelInheritance() {

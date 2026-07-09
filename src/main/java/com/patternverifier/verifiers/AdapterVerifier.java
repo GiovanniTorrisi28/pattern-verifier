@@ -2,6 +2,7 @@ package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
 import com.patternverifier.core.MethodInvocationAnalyzer;
+import com.patternverifier.core.TypeHierarchy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,14 +38,9 @@ public class AdapterVerifier {
     }
 
     private void checkAdapterImplementsTarget(List<String> violations) {
-        // Il Target GoF può essere un'interfaccia o una classe astratta: si accetta sia
-        // l'implementazione di un'interfaccia sia l'estensione di una superclasse (a qualsiasi
-        // livello, via isDescendantOf), coerentemente con gli altri verifier inheritance-aware.
-        String targetName = target.getClassName();
-        boolean implementsTarget = adapter.getInterfaces().contains(targetName)
-                || targetName.equals(adapter.getSuperClassName())
-                || adapter.isDescendantOf(targetName);
-        if (!implementsTarget) {
+        // Il Target GoF può essere un'interfaccia o una classe astratta: TypeHierarchy.isAssignable
+        // copre entrambi i casi (interfacce e superclassi, a qualsiasi livello transitivo).
+        if (!TypeHierarchy.isAssignable(adapter.getClassName(), target.getClassName())) {
             violations.add(
                 adapter.getSimpleName() + " non implementa né estende " + target.getSimpleName() +
                 " — l'Adapter deve conformarsi allo stesso tipo (interfaccia o classe astratta) del Target"
@@ -64,7 +60,8 @@ public class AdapterVerifier {
     }
 
     private void checkAdapteeDoesNotImplementTarget(List<String> violations) {
-        boolean alreadyImplements = adaptee.getInterfaces().contains(target.getClassName());
+        // Copre anche il caso Target = classe astratta (prima si controllava solo l'interfaccia).
+        boolean alreadyImplements = TypeHierarchy.isAssignable(adaptee.getClassName(), target.getClassName());
         if (alreadyImplements) {
             violations.add(
                 adaptee.getSimpleName() + " implementa già " + target.getSimpleName() +

@@ -101,11 +101,9 @@ public class ClassAnalyzer extends ClassVisitor {
         List<FieldInfo> mergedFields = new ArrayList<>(own.getFields());
         List<MethodInfo> mergedMethods = new ArrayList<>(own.getMethods());
         Set<String> mergedInterfaces = new LinkedHashSet<>(own.getInterfaces());
-        List<String> superClassChain = new ArrayList<>();
 
         String superClassName = own.getSuperClassName();
         while (superClassName != null && !isOutOfHierarchyScope(superClassName)) {
-            superClassChain.add(superClassName);
             ClassMetadata ancestor;
             try {
                 ancestor = analyzeResource(loader, superClassName);
@@ -121,8 +119,7 @@ public class ClassAnalyzer extends ClassVisitor {
         expandInterfaceHierarchy(loader, mergedInterfaces);
 
         return new ClassMetadata(own.getClassName(), own.getSuperClassName(),
-                new ArrayList<>(mergedInterfaces), own.getAccess(), mergedFields, mergedMethods,
-                superClassChain);
+                new ArrayList<>(mergedInterfaces), own.getAccess(), mergedFields, mergedMethods);
     }
 
     private static boolean isOutOfHierarchyScope(String className) {
