@@ -2,6 +2,8 @@
 
 Libreria JUnit 5 per verificare che le classi Java implementino correttamente i design pattern della Gang of Four (GoF), tramite analisi del bytecode con ASM.
 
+Il progetto è lo strumento sviluppato per una tesi di laurea magistrale in Informatica (Università degli Studi di Catania). Non fa detection — non indovina quali pattern siano presenti in un codice sconosciuto — ma conformance checking: parte da una dichiarazione esplicita di intento e verifica che il codice la rispetti.
+
 ## Cosa fa
 
 `pattern-verifier` fornisce un DSL fluente da usare all'interno dei test JUnit per dichiarare quale pattern una classe intende implementare e verificare che la struttura del codice lo rispetti:
@@ -16,11 +18,17 @@ void socketAdapterShouldPass() {
 }
 ```
 
-Se la classe non rispetta la struttura del pattern dichiarato, il test fallisce con un messaggio che elenca tutte le violazioni trovate.
+Se la classe non rispetta la struttura del pattern dichiarato, il test fallisce con un messaggio che elenca tutte le violazioni trovate:
+
+```
+SocketAdapter: violazione pattern Adapter (Adaptee=LegacySocket, Target=ModernSocket)
+  - SocketAdapter non delega mai all'Adaptee LegacySocket — l'Adapter (object adapter)
+    deve invocare metodi dell'Adaptee per realizzare la traduzione
+```
 
 ## Pattern supportati
 
-18 dei 23 pattern GoF sono implementati. I 5 esclusi non hanno proprietà strutturali verificabili staticamente; la motivazione per ciascuno è documentata in [docs/formalizzazione_pattern.md](docs/formalizzazione_pattern.md).
+18 dei 23 pattern GoF sono implementati. I 5 esclusi sono quelli le cui proprietà caratterizzanti non sono verificabili staticamente: la loro definizione riguarda il comportamento a runtime o l'intento del progettista, non la struttura delle classi.
 
 | Creazionali | Strutturali | Comportamentali |
 |---|---|---|
@@ -33,13 +41,31 @@ Se la classe non rispetta la struttura del pattern dichiarato, il test fallisce 
 | | | Visitor |
 | | | Mediator |
 
+## Valutazione su codice reale
+
+Lo strumento è stato valutato su **JHotDraw 5.1**, framework storico co-progettato da Erich Gamma come vetrina dei pattern GoF, usando come oracolo esterno il catalogo peer-reviewed **P-MARt**. Ogni classe dichiarata dall'oracolo è un caso di test indipendente: 130 casi in tutto.
+
+| Conteggio | Classi conformi | Classi testate | TPR |
+|---|---|---|---|
+| Solo oracolo esterno (P-MARt) | 78 | 119 | 65,5% |
+| Oracolo esterno + analisi manuale | 79 | 130 | 60,8% |
+
+Il dato interessante non è la percentuale ma la sua scomposizione. Le 51 classi non conformi non dicono tutte la stessa cosa:
+
+- **38** — il pattern è realmente implementato, ma devia dal canone su una proprietà specifica; qui il fallimento è un successo diagnostico;
+- **9** — l'attribuzione del ruolo nell'oracolo è sbagliata, e lo strumento sta esponendo un errore della fonte, non un difetto del codice;
+- **3** — la relazione fra le classi esiste, ma è di natura diversa da quella prescritta dal pattern;
+- **1** — un ruolo che richiede un campo di istanza risulta attribuito a un'interfaccia, dove il fallimento è strutturalmente garantito.
+
+Ogni caso non conforme è stato verificato singolarmente contro il sorgente di JHotDraw, confrontando il messaggio prodotto dallo strumento con il codice che lo ha causato.
+
 ## Usare il tool nel proprio progetto
 
 `pattern-verifier` non è pubblicato su Maven Central: va installato nel repository Maven locale a partire dal sorgente, poi referenziato come qualsiasi altra dipendenza.
 
 **1. Clonare e installare il tool**:
 ```bash
-git clone <url-repo> pattern-verifier
+git clone https://github.com/GiovanniTorrisi28/pattern-verifier.git
 cd pattern-verifier
 .\mvnw.cmd install    # Windows
 ./mvnw install         # macOS / Linux
@@ -88,7 +114,7 @@ Output atteso:
 [INFO] Tests run: 171, Failures: 0, Errors: 0, Skipped: 1
 [INFO] BUILD SUCCESS
 ```
-(Lo `Skipped: 1` è un test `@Disabled` con spiegazione — un limite fondamentale di ArchUnit documentato nel confronto di Fase 4, non un test rotto.)
+(Lo `Skipped: 1` è un test `@Disabled` con spiegazione — un limite fondamentale di ArchUnit documentato nel confronto con quello strumento, non un test rotto.)
 
 Per eseguire i test di un singolo pattern:
 ```bash
@@ -96,17 +122,17 @@ Per eseguire i test di un singolo pattern:
 .\mvnw.cmd test -Dtest="ObserverVerifierTest"
 ```
 
-## Riprodurre la valutazione su JHotDraw 5.1 (Fase 5)
+## Riprodurre la valutazione su JHotDraw 5.1
 
-Il progetto include una valutazione del tool su codice reale: **JHotDraw 5.1**, framework Java
-storico progettato da Erich Gamma esplicitamente come vetrina dei design pattern GoF. Il ground
-truth (quale classe implementa quale pattern) viene dal catalogo P-MARt ufficiale — vedi
-[docs/ground_truth_jhotdraw_pmart.md](docs/ground_truth_jhotdraw_pmart.md) per la fonte e la sua
-autorevolezza.
+Il ground truth (quale classe implementa quale pattern) viene dal catalogo P-MARt, repository di
+micro-architetture di pattern curato dal Ptidej Team e usato come riferimento nella letteratura
+sul rilevamento dei design pattern. La copia usata per questa valutazione è in
+[docs/pmart_design_pattern_list_v1.2.xml](docs/pmart_design_pattern_list_v1.2.xml), insieme al
+paper originale che la descrive.
 
 JHotDraw 5.1 non è su Maven Central (è un progetto del 1997 non più mantenuto): il sorgente va
 scaricato, compilato e installato in locale prima di eseguire i test di valutazione. Questi passi
-sono **necessari solo per la Fase 5** — i 171 test principali del tool (sezione sopra) girano con
+servono **solo per la valutazione** — i 171 test principali del tool (sezione sopra) girano con
 `mvnw test` senza nulla di tutto questo: la dipendenza JHotDraw e i test che la usano sono isolati
 nel profilo Maven `jhotdraw-evaluation` (attivo solo con `-P jhotdraw-evaluation`), non nella
 build di default.
@@ -132,7 +158,11 @@ jar cf target/jhotdraw-5.1.jar -C target/jhotdraw-build/classes .
 
 **4. Installarlo nel repository Maven locale**:
 ```bash
+# Windows
 .\mvnw.cmd install:install-file -Dfile=target/jhotdraw-5.1.jar -DgroupId=ch.ifa.draw -DartifactId=jhotdraw -Dversion=5.1 -Dpackaging=jar
+
+# macOS / Linux
+./mvnw install:install-file -Dfile=target/jhotdraw-5.1.jar -DgroupId=ch.ifa.draw -DartifactId=jhotdraw -Dversion=5.1 -Dpackaging=jar
 ```
 
 **5. Eseguire i test di valutazione** (attivando il profilo `jhotdraw-evaluation`):
@@ -140,24 +170,42 @@ jar cf target/jhotdraw-5.1.jar -C target/jhotdraw-build/classes .
 .\mvnw.cmd test -P jhotdraw-evaluation
 ```
 
+Output atteso:
+```
+[INFO] Tests run: 303, Failures: 0, Errors: 0, Skipped: 1
+[INFO] BUILD SUCCESS
+```
+
 Il profilo aggiunge la dipendenza `ch.ifa.draw:jhotdraw:5.1` (risolta dal repository Maven locale
 dopo il passo 4) e la cartella `src/test/java-jhotdraw/`, tenuta separata da `src/test/java/` in
-modo che la build di default non richieda mai il corpus JHotDraw. Contiene per ora
-`InheritanceAwareAnalysisValidationTest` (prova di regressione sull'analisi inheritance-aware);
-`JHotDrawPatternEvaluationTest` (la valutazione completa di Fase 5) andrà nella stessa cartella.
+modo che la build di default non richieda mai il corpus JHotDraw. Contiene
+`InheritanceAwareAnalysisValidationTest` (prova di regressione sull'analisi inheritance-aware) e
+`JHotDrawPatternEvaluationTest` (la valutazione completa sui 130 casi).
+
+I test di valutazione passano quando lo strumento produce l'esito atteso, che per le classi non
+conformi è il fallimento della verifica: sono scritti con `assertThrows` e controllano anche il
+contenuto del messaggio di violazione, non solo che l'eccezione venga sollevata.
 
 ## Struttura del progetto
 
 ```
 src/main/java/com/patternverifier/
 ├── PatternAssertions.java          # punto di ingresso del DSL
+├── PatternAnnotationScanner.java   # punto di ingresso dell'API a annotazioni
 ├── core/                           # lettura bytecode ASM + modello interno
-│   ├── ClassAnalyzer.java
+│   ├── ClassAnalyzer.java                      # analisi inheritance-aware di una classe
 │   ├── ClassMetadata.java
 │   ├── FieldInfo.java
-│   └── MethodInfo.java
+│   ├── MethodInfo.java
+│   ├── TypeHierarchy.java                      # assegnabilità fra tipi
+│   ├── CollectionTypes.java                    # collezioni e argomento generico
+│   ├── MethodInvocationAnalyzer.java           # invocazioni, lambda e method reference
+│   ├── SelfReturnAnalyzer.java                 # metodi che restituiscono this (Builder)
+│   ├── InternalFactoryAssignmentAnalyzer.java  # selezione interna di Strategy/State
+│   └── TemplateMethodBodyAnalyzer.java         # corpo del metodo modello
 ├── verifiers/                      # un verifier per pattern
-└── assertions/                     # classi intermedie del DSL (XxxAssert)
+├── assertions/                     # classi intermedie del DSL (XxxAssert)
+└── annotations/                    # annotazioni @GoFXxx
 
 src/test/java/com/patternverifier/
 └── <nomepattern>/
@@ -166,22 +214,9 @@ src/test/java/com/patternverifier/
     └── wrong/                      # fixture con violazioni intenzionali
 
 src/test/java-jhotdraw/com/patternverifier/jhotdraw/
-└── ...                              # test che dipendono da JHotDraw 5.1 (profilo jhotdraw-evaluation)
+├── InheritanceAwareAnalysisValidationTest.java
+└── JHotDrawPatternEvaluationTest.java   # valutazione su JHotDraw 5.1 (profilo jhotdraw-evaluation)
 ```
-
-## Documentazione
-
-| Documento | Contenuto |
-|---|---|
-| [docs/architettura.md](docs/architettura.md) | Architettura interna — pipeline a 4 livelli, motivazioni di design |
-| [docs/formalizzazione_pattern.md](docs/formalizzazione_pattern.md) | Proprietà verificate per ogni pattern, pattern esclusi con motivazione |
-| [docs/analisi_tesi.md](docs/analisi_tesi.md) | Stato dell'arte, approccio, note di design dell'API |
-| [docs/decisioni.md](docs/decisioni.md) | Log delle decisioni architetturali e relative motivazioni |
-| [docs/piano_lavoro.md](docs/piano_lavoro.md) | Fasi di sviluppo e avanzamento |
-| [docs/ground_truth_jhotdraw_pmart.md](docs/ground_truth_jhotdraw_pmart.md) | Ground truth primario per la valutazione su JHotDraw 5.1 (catalogo P-MARt, fonte e autorevolezza) |
-| [docs/jhotdraw51_class_role_index.md](docs/jhotdraw51_class_role_index.md) | Indice classe→ruolo per JHotDraw 5.1, con attribuzione della fonte |
-| [docs/note_valutazione_jhotdraw.md](docs/note_valutazione_jhotdraw.md) | Rischi di falso negativo attesi per verifier, risultati e categorizzazione dei fallimenti sulla valutazione JHotDraw |
-| [docs/jhotdraw_analisi_fallimenti.md](docs/jhotdraw_analisi_fallimenti.md) | Dettaglio classe-per-classe dei casi non conformi: messaggio reale del tool + verifica sul sorgente |
 
 ## Tecnologie
 

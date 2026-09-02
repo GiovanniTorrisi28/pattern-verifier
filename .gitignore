@@ -18,3 +18,8 @@ target/
 
 # macOS
 .DS_Store
+
+# Note di lavoro interne: appunti presi durante lo sviluppo come materiale
+# per la stesura della tesi, non documentazione destinata al pubblico.
+# In docs/ restano tracciati solo il catalogo P-MARt (.xml) e il paper (.pdf).
+docs/*.md
