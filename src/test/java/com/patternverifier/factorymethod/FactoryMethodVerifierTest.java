@@ -1,6 +1,10 @@
 package com.patternverifier.factorymethod;
 
 import com.patternverifier.PatternAssertions;
+import com.patternverifier.factorymethod.batch.AnimalKennel;
+import com.patternverifier.factorymethod.batch.DogKennel;
+import com.patternverifier.factorymethod.batch.RawAnimalKennel;
+import com.patternverifier.factorymethod.batch.RawDogKennel;
 import com.patternverifier.factorymethod.correct.Animal;
 import com.patternverifier.factorymethod.correct.AnimalCreator;
 import com.patternverifier.factorymethod.correct.AnimalFactory;
@@ -105,5 +109,29 @@ class FactoryMethodVerifierTest {
         assertTrue(msg.contains("createAnimal"), "Dovrebbe riportare il factory method mancante");
         assertTrue(msg.contains("estende"),   "Dovrebbe riportare che il ConcreteCreator non estende il Creator");
         assertTrue(msg.contains("override"),  "Dovrebbe riportare il factory method non implementato");
+    }
+
+    @Test
+    void batchFactoryMethodReturningGenericCollectionShouldPass() {
+        // Variante "a lotti": il factory method astratto restituisce List<Animal> anziché Animal
+        // (analogo a Vector<Handle> handles() in JHotDraw, ma con generics dichiarati).
+        PatternAssertions.assertThat(AnimalKennel.class)
+                .implementsFactoryMethod()
+                .withAbstractFactoryMethod("createAnimals", Animal.class)
+                .withConcreteCreator(DogKennel.class);
+    }
+
+    @Test
+    void batchFactoryMethodReturningRawCollectionShouldBeReported() {
+        // Collezione raw (senza generics, come JHotDraw 1997): nessun attributo Signature da cui
+        // leggere il tipo elemento, quindi il match non può essere confermato.
+        AssertionError error = assertThrows(AssertionError.class, () ->
+                PatternAssertions.assertThat(RawAnimalKennel.class)
+                        .implementsFactoryMethod()
+                        .withAbstractFactoryMethod("createAnimals", Animal.class)
+                        .withConcreteCreator(RawDogKennel.class)
+        );
+        assertTrue(error.getMessage().contains("createAnimals"),
+                "Il messaggio dovrebbe indicare il factory method non riconosciuto (collezione raw)");
     }
 }

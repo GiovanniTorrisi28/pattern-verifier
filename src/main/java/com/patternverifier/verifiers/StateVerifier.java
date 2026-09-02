@@ -94,7 +94,7 @@ public class StateVerifier {
     // checkContextHasInjectionPoint, e stesso motivo: non basta che un metodo RESTITUISCA il
     // tipo giusto (lo fa anche un Factory Method puro, che consegna l'istanza a un chiamante
     // esterno senza conservarla), serve che il valore sia realmente assegnato come stato della
-    // classe. Distingue SelectionTool (fChild = createHandleTracker(...), genuino) da
+    // classe. Distingue SelectionTool (fChild = createHandleTracker(...), conserva) da
     // StandardDrawingView (tool() è un puro forwarder verso fEditor.tool(), mai un'assegnazione
     // a un proprio campo — resta correttamente non conforme).
     private void checkContextHasTransitionMethod(List<String> violations) {

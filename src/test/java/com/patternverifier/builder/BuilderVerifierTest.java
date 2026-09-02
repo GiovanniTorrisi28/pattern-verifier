@@ -6,6 +6,7 @@ import com.patternverifier.builder.correct.PersonBuilder;
 import com.patternverifier.builder.correct.Query;
 import com.patternverifier.builder.correct.QueryBuilder;
 import com.patternverifier.builder.wrong.AllViolationsBuilder;
+import com.patternverifier.builder.wrong.CopyingBuilder;
 import com.patternverifier.builder.wrong.NoBuildMethodBuilder;
 import com.patternverifier.builder.wrong.NoFluentMethodBuilder;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,20 @@ class BuilderVerifierTest {
         );
         assertTrue(error.getMessage().contains("build") || error.getMessage().contains("terminale"),
                 "Il messaggio dovrebbe indicare la mancanza del metodo build");
+    }
+
+    @Test
+    void builderReturningNewInstanceShouldBeReported() {
+        // I metodi dichiarano il tipo del Builder come tipo di ritorno — la catena compila — ma
+        // restituiscono una nuova istanza invece di this. Fino al 2026-07-22 questo caso passava:
+        // il verifier si fermava alla firma e non leggeva il corpo del metodo.
+        AssertionError error = assertThrows(AssertionError.class, () ->
+                PatternAssertions.assertThat(CopyingBuilder.class)
+                        .implementsBuilder()
+                        .forProduct(Person.class)
+        );
+        assertTrue(error.getMessage().contains("this"),
+                "Il messaggio dovrebbe indicare che nessun metodo fluente restituisce this");
     }
 
     @Test

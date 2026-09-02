@@ -48,7 +48,7 @@ public class ClassAnalyzer extends ClassVisitor {
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor,
                                      String signature, String[] exceptions) {
-        methods.add(new MethodInfo(name, descriptor, access));
+        methods.add(new MethodInfo(name, descriptor, access, signature));
         return null; // per ora non analizziamo il corpo dei metodi
     }
 
@@ -117,9 +117,38 @@ public class ClassAnalyzer extends ClassVisitor {
         }
 
         expandInterfaceHierarchy(loader, mergedInterfaces);
+        mergeInterfaceMethods(loader, mergedMethods, mergedInterfaces);
 
         return new ClassMetadata(own.getClassName(), own.getSuperClassName(),
                 new ArrayList<>(mergedInterfaces), own.getAccess(), mergedFields, mergedMethods);
+    }
+
+    /**
+     * Rende visibili i metodi dichiarati dalle interfacce implementate o estese.
+     *
+     * <p>La risalita lungo {@code superClassName} non basta: nel bytecode la superclasse di
+     * un'interfaccia è sempre {@code java.lang.Object}, quindi i metodi che un'interfaccia eredita
+     * da un'altra interfaccia non comparirebbero mai. Il caso reale che lo ha reso evidente è
+     * JHotDraw: {@code ConnectionFigure extends Figure} e il metodo {@code clone()} è dichiarato
+     * in {@code Figure} — un verificatore che cerchi il contratto di clonazione su
+     * {@code ConnectionFigure} non lo troverebbe, pur essendo parte del suo tipo a tutti gli
+     * effetti. È l'analogo, per le interfacce, della risalita lungo le superclassi.
+     *
+     * <p>Vale anche per le classi: un metodo dichiarato in un'interfaccia implementata fa parte
+     * del contratto pubblico della classe, indipendentemente da dove sia implementato.
+     */
+    private static void mergeInterfaceMethods(ClassLoader loader, List<MethodInfo> mergedMethods,
+                                              Set<String> interfaces) {
+        for (String interfaceName : interfaces) {
+            if (isOutOfHierarchyScope(interfaceName)) {
+                continue;
+            }
+            try {
+                mergeMethods(mergedMethods, analyzeResource(loader, interfaceName).getMethods());
+            } catch (RuntimeException e) {
+                // interfaccia non caricabile (es. libreria esterna non sul classpath): si ignora
+            }
+        }
     }
 
     private static boolean isOutOfHierarchyScope(String className) {

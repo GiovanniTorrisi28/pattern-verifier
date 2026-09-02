@@ -20,7 +20,7 @@ Se la classe non rispetta la struttura del pattern dichiarato, il test fallisce 
 
 ## Pattern supportati
 
-16 dei 23 pattern GoF sono implementati. I 7 esclusi non hanno proprietà strutturali verificabili staticamente; la motivazione per ciascuno è documentata in [docs/formalizzazione_pattern.md](docs/formalizzazione_pattern.md).
+18 dei 23 pattern GoF sono implementati. I 5 esclusi non hanno proprietà strutturali verificabili staticamente; la motivazione per ciascuno è documentata in [docs/formalizzazione_pattern.md](docs/formalizzazione_pattern.md).
 
 | Creazionali | Strutturali | Comportamentali |
 |---|---|---|
@@ -28,9 +28,44 @@ Se la classe non rispetta la struttura del pattern dichiarato, il test fallisce 
 | Factory Method | Proxy | Observer |
 | Abstract Factory | Decorator | Command |
 | Builder | Composite | Template Method |
-| | Bridge | State |
+| Prototype | Bridge | State |
 | | | Chain of Responsibility |
 | | | Visitor |
+| | | Mediator |
+
+## Usare il tool nel proprio progetto
+
+`pattern-verifier` non è pubblicato su Maven Central: va installato nel repository Maven locale a partire dal sorgente, poi referenziato come qualsiasi altra dipendenza.
+
+**1. Clonare e installare il tool**:
+```bash
+git clone <url-repo> pattern-verifier
+cd pattern-verifier
+.\mvnw.cmd install    # Windows
+./mvnw install         # macOS / Linux
+```
+Compila il tool, esegue i suoi 171 test interni e pubblica il jar in `~/.m2/repository/com/patternverifier/pattern-verifier/` — disponibile da quel momento a qualsiasi progetto Maven sulla stessa macchina.
+
+**2. Aggiungere la dipendenza nel proprio progetto** (`pom.xml`):
+```xml
+<dependency>
+    <groupId>com.patternverifier</groupId>
+    <artifactId>pattern-verifier</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <scope>test</scope>
+</dependency>
+```
+
+**3. Scrivere un test JUnit 5** usando il DSL fluente (vedi sopra) oppure le annotazioni:
+```java
+@GoFAdapter(adaptee = LegacySocket.class, target = ModernSocket.class)
+public class SocketAdapter implements ModernSocket { ... }
+
+@Test
+void patternsShouldBeCorrectlyImplemented() {
+    PatternAnnotationScanner.verify(SocketAdapter.class);
+}
+```
 
 ## Requisiti
 
@@ -50,7 +85,7 @@ Al primo avvio Maven Wrapper scarica Maven e le dipendenze automaticamente (circ
 
 Output atteso:
 ```
-[INFO] Tests run: 142, Failures: 0, Errors: 0, Skipped: 1
+[INFO] Tests run: 171, Failures: 0, Errors: 0, Skipped: 1
 [INFO] BUILD SUCCESS
 ```
 (Lo `Skipped: 1` è un test `@Disabled` con spiegazione — un limite fondamentale di ArchUnit documentato nel confronto di Fase 4, non un test rotto.)
@@ -71,7 +106,7 @@ autorevolezza.
 
 JHotDraw 5.1 non è su Maven Central (è un progetto del 1997 non più mantenuto): il sorgente va
 scaricato, compilato e installato in locale prima di eseguire i test di valutazione. Questi passi
-sono **necessari solo per la Fase 5** — i 142 test principali del tool (sezione sopra) girano con
+sono **necessari solo per la Fase 5** — i 171 test principali del tool (sezione sopra) girano con
 `mvnw test` senza nulla di tutto questo: la dipendenza JHotDraw e i test che la usano sono isolati
 nel profilo Maven `jhotdraw-evaluation` (attivo solo con `-P jhotdraw-evaluation`), non nella
 build di default.
@@ -146,7 +181,7 @@ src/test/java-jhotdraw/com/patternverifier/jhotdraw/
 | [docs/ground_truth_jhotdraw_pmart.md](docs/ground_truth_jhotdraw_pmart.md) | Ground truth primario per la valutazione su JHotDraw 5.1 (catalogo P-MARt, fonte e autorevolezza) |
 | [docs/jhotdraw51_class_role_index.md](docs/jhotdraw51_class_role_index.md) | Indice classe→ruolo per JHotDraw 5.1, con attribuzione della fonte |
 | [docs/note_valutazione_jhotdraw.md](docs/note_valutazione_jhotdraw.md) | Rischi di falso negativo attesi per verifier, risultati e categorizzazione dei fallimenti sulla valutazione JHotDraw |
-| [docs/jhotdraw_analisi_fallimenti.md](docs/jhotdraw_analisi_fallimenti.md) | Dettaglio classe-per-classe dei 48 casi non conformi: messaggio reale del tool + verifica sul sorgente |
+| [docs/jhotdraw_analisi_fallimenti.md](docs/jhotdraw_analisi_fallimenti.md) | Dettaglio classe-per-classe dei casi non conformi: messaggio reale del tool + verifica sul sorgente |
 
 ## Tecnologie
 

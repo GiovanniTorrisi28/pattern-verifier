@@ -91,7 +91,35 @@ public class PatternAnnotationScanner {
         if (clazz.isAnnotationPresent(GoFVisitor.class)) {
             violations.addAll(scanVisitor(clazz, clazz.getAnnotation(GoFVisitor.class)));
         }
+        if (clazz.isAnnotationPresent(GoFPrototype.class)) {
+            violations.addAll(scanPrototype(clazz, clazz.getAnnotation(GoFPrototype.class)));
+        }
+        if (clazz.isAnnotationPresent(GoFMediator.class)) {
+            violations.addAll(scanMediator(clazz, clazz.getAnnotation(GoFMediator.class)));
+        }
         return violations;
+    }
+
+    private static List<String> scanPrototype(Class<?> clazz, GoFPrototype ann) {
+        ClassMetadata concretePrototype = ClassAnalyzer.analyze(clazz);
+        ClassMetadata prototype         = ClassAnalyzer.analyze(ann.prototype());
+        // void.class è il sentinella di "client non dichiarato" (le annotazioni Java non
+        // ammettono un default nullo per un attributo di tipo Class).
+        if (ann.client() == void.class) {
+            return new PrototypeVerifier(concretePrototype, prototype).verify();
+        }
+        ClassMetadata client = ClassAnalyzer.analyze(ann.client());
+        return new PrototypeVerifier(concretePrototype, prototype, client).verify();
+    }
+
+    private static List<String> scanMediator(Class<?> clazz, GoFMediator ann) {
+        ClassMetadata concreteMediator = ClassAnalyzer.analyze(clazz);
+        ClassMetadata mediator         = ClassAnalyzer.analyze(ann.mediatorInterface());
+        List<ClassMetadata> colleagues = new ArrayList<>();
+        for (Class<?> colleague : ann.colleagues()) {
+            colleagues.add(ClassAnalyzer.analyze(colleague));
+        }
+        return new MediatorVerifier(concreteMediator, mediator, colleagues).verify();
     }
 
     private static List<String> scanFactoryMethod(Class<?> clazz, GoFFactoryMethod ann) {
@@ -182,6 +210,12 @@ public class PatternAnnotationScanner {
         ClassMetadata concreteVisitor   = ClassAnalyzer.analyze(clazz);
         ClassMetadata visitorInterface  = ClassAnalyzer.analyze(ann.visitorInterface());
         ClassMetadata element           = ClassAnalyzer.analyze(ann.element());
-        return new VisitorVerifier(concreteVisitor, visitorInterface, element).verify();
+        // void.class è il sentinella di "concreteElement non dichiarato" (le annotazioni Java
+        // non ammettono un default nullo per un attributo di tipo Class).
+        if (ann.concreteElement() == void.class) {
+            return new VisitorVerifier(concreteVisitor, visitorInterface, element).verify();
+        }
+        ClassMetadata concreteElement = ClassAnalyzer.analyze(ann.concreteElement());
+        return new VisitorVerifier(concreteVisitor, visitorInterface, element, concreteElement).verify();
     }
 }

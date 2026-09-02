@@ -13,6 +13,8 @@ import com.patternverifier.assertions.AdapterAssert;
 import com.patternverifier.assertions.CompositeAssert;
 import com.patternverifier.assertions.DecoratorAssert;
 import com.patternverifier.assertions.FactoryMethodAssert;
+import com.patternverifier.assertions.MediatorAssert;
+import com.patternverifier.assertions.PrototypeAssert;
 import com.patternverifier.assertions.ProxyAssert;
 import com.patternverifier.core.ClassAnalyzer;
 import com.patternverifier.core.ClassMetadata;
@@ -115,6 +117,14 @@ public class PatternAssertions {
 
     public VisitorAssert implementsVisitor() {
         return new VisitorAssert(clazz, metadata);
+    }
+
+    public PrototypeAssert implementsPrototype() {
+        return new PrototypeAssert(clazz, metadata);
+    }
+
+    public MediatorAssert implementsMediator() {
+        return new MediatorAssert(clazz, metadata);
     }
 
     private String formatViolations(String pattern, List<String> violations) {

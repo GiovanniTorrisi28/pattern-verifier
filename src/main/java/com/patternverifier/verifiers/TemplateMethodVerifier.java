@@ -63,7 +63,9 @@ public class TemplateMethodVerifier {
 
     // Usa MethodVisitor (analisi del corpo) per verificare che il template method
     // invochi concretamente i passi astratti via INVOKEVIRTUAL sulla stessa classe.
-    // È l'unica verifica in questo progetto che richiede l'analisi delle istruzioni bytecode.
+    // Non è l'unica verifica che legge istruzioni bytecode — MethodInvocationAnalyzer lo fa per
+    // altri 11 verifier — ma è l'unica mirata su un singolo metodo indicato dal programmatore,
+    // invece che sull'intera classe.
     private void checkTemplateMethodCallsAbstractSteps(List<String> violations) {
         Set<String> abstractStepNames = abstractClass.getMethods().stream()
                 .filter(MethodInfo::isAbstract)

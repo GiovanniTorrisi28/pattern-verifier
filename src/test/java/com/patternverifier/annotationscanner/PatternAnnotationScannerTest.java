@@ -20,6 +20,8 @@ import com.patternverifier.state.correct.TrafficLight;
 import com.patternverifier.strategy.correct.SorterWithSetter;
 import com.patternverifier.templatemethod.correct.DataProcessor;
 import com.patternverifier.visitor.correct.HtmlExporter;
+import com.patternverifier.prototype.correct.Circle;
+import com.patternverifier.mediator.correct.ChatRoom;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -84,7 +86,7 @@ class PatternAnnotationScannerTest {
     }
 
     @Test
-    void allSixteenPatternsAnnotatedCorrectlyShouldPass() {
+    void allEighteenPatternsAnnotatedCorrectlyShouldPass() {
         PatternAnnotationScanner.verify(
                 DatabaseConnection.class,     // @GoFSingleton
                 DogFactory.class,             // @GoFFactoryMethod
@@ -101,7 +103,9 @@ class PatternAnnotationScannerTest {
                 SocketAdapter.class,          // @GoFAdapter
                 RemoteControl.class,          // @GoFBridge
                 FileSystemDirectory.class,    // @GoFComposite
-                HtmlExporter.class            // @GoFVisitor
+                HtmlExporter.class,           // @GoFVisitor
+                Circle.class,                 // @GoFPrototype
+                ChatRoom.class                // @GoFMediator
         );
     }
 

@@ -89,7 +89,7 @@ public class StrategyVerifier {
     // tipo giusto (quello lo fa anche un Factory Method puro, che consegna l'istanza a un
     // chiamante esterno senza mai conservarla): serve che il valore sia realmente conservato
     // come stato della classe. Distingue così i due casi strutturalmente identici scoperti in
-    // JHotDraw: SelectionTool/ConnectionTool (assegnazione reale, genuini) da PolygonFigure,
+    // JHotDraw: SelectionTool/ConnectionTool (assegnazione reale) da PolygonFigure,
     // EllipseFigure, PolyLineFigure, RoundRectangleFigure, AbstractFigure, DecoratorFigure
     // (connectorAt() costruisce un Connector nuovo ogni volta per il chiamante, mai assegnato
     // a un campo — è un Factory Method, non una Strategy interna).

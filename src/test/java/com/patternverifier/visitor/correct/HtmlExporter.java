@@ -2,7 +2,9 @@ package com.patternverifier.visitor.correct;
 
 import com.patternverifier.annotations.GoFVisitor;
 
-@GoFVisitor(visitorInterface = DocumentVisitor.class, element = DocumentElement.class)
+@GoFVisitor(visitorInterface = DocumentVisitor.class,
+            element = DocumentElement.class,
+            concreteElement = Paragraph.class)
 public class HtmlExporter implements DocumentVisitor {
 
     @Override

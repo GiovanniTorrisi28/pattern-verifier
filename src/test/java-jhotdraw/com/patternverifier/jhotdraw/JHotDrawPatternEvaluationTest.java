@@ -7,7 +7,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Valutazione Fase 5: ogni classe concreta del ground truth viene testata contro JHotDraw 5.1
@@ -526,6 +528,133 @@ class JHotDrawPatternEvaluationTest {
                 CH.ifa.draw.contrib.PolygonFigure.class,
                 CH.ifa.draw.figures.RoundRectangleFigure.class,
                 CH.ifa.draw.figures.PolyLineFigure.class
+        );
+    }
+
+    // ==================================================================================
+    // Prototype — istanze #83 (ConnectionFigure) e #84 (Figure): 24/24 conformi.
+    // Il pattern è autodocumentato nel javadoc originale ("ConnectionTools creates the
+    // connection by cloning a prototype", con rimando alla slide del pattern language di
+    // Kirk/Gamma). L'istanza #83 falliva finché ClassAnalyzer non risaliva le super-interfacce:
+    // clone() è dichiarato in Figure, non in ConnectionFigure che lo estende.
+    // ==================================================================================
+
+    @Tag("pmart")
+    @ParameterizedTest
+    @MethodSource("prototypeConnectionClasses")
+    void prototypeConnectionShouldPass(Class<?> concretePrototype) {
+        PatternAssertions.assertThat(concretePrototype)
+                .implementsPrototype()
+                .withPrototype(CH.ifa.draw.framework.ConnectionFigure.class)
+                .withClient(CH.ifa.draw.standard.ConnectionTool.class);
+    }
+
+    static Stream<Class<?>> prototypeConnectionClasses() {
+        return Stream.of(
+                CH.ifa.draw.figures.LineConnection.class,
+                CH.ifa.draw.figures.ElbowConnection.class,
+                CH.ifa.draw.samples.pert.PertDependency.class
+        );
+    }
+
+    @Tag("pmart")
+    @ParameterizedTest
+    @MethodSource("prototypeFigureClasses")
+    void prototypeFigureShouldPass(Class<?> concretePrototype) {
+        PatternAssertions.assertThat(concretePrototype)
+                .implementsPrototype()
+                .withPrototype(CH.ifa.draw.framework.Figure.class)
+                .withClient(CH.ifa.draw.standard.CreationTool.class);
+    }
+
+    static Stream<Class<?>> prototypeFigureClasses() {
+        return Stream.of(
+                CH.ifa.draw.figures.EllipseFigure.class,
+                CH.ifa.draw.figures.ImageFigure.class,
+                CH.ifa.draw.contrib.PolygonFigure.class,
+                CH.ifa.draw.figures.RectangleFigure.class,
+                CH.ifa.draw.contrib.DiamondFigure.class,
+                CH.ifa.draw.contrib.TriangleFigure.class,
+                CH.ifa.draw.figures.RoundRectangleFigure.class,
+                CH.ifa.draw.figures.TextFigure.class,
+                CH.ifa.draw.samples.net.NodeFigure.class,
+                CH.ifa.draw.figures.NumberTextFigure.class,
+                CH.ifa.draw.figures.GroupFigure.class,
+                CH.ifa.draw.samples.pert.PertFigure.class,
+                CH.ifa.draw.standard.StandardDrawing.class,
+                CH.ifa.draw.samples.javadraw.BouncingDrawing.class,
+                CH.ifa.draw.samples.javadraw.AnimationDecorator.class,
+                CH.ifa.draw.figures.BorderDecorator.class,
+                CH.ifa.draw.figures.PolyLineFigure.class,
+                CH.ifa.draw.figures.LineConnection.class,
+                CH.ifa.draw.figures.ElbowConnection.class,
+                CH.ifa.draw.samples.pert.PertDependency.class,
+                CH.ifa.draw.figures.LineFigure.class
+        );
+    }
+
+    // ==================================================================================
+    // Mediator — DrawingEditor: 0/10 conformi.
+    //
+    // Il ruolo Mediator è dichiarato dal javadoc originale ("DrawingEditor is the mediator. It
+    // decouples the participants of a drawing editor"), ma **i Colleague non sono dichiarati da
+    // alcuna fonte**: né P-MARt (che non cataloga affatto Mediator per JHotDraw) né il javadoc,
+    // i cui tag @see Tool/DrawingView/Drawing indicano classi correlate, non ruoli GoF. Sono
+    // quindi frutto di analisi manuale del sorgente, ed è la ragione per cui questa istanza pesa
+    // solo sul secondo conteggio TPR ("P-MARt + Manuale").
+    //
+    // Criterio adottato: è Colleague chi comunica ATTRAVERSO il Mediator, e per farlo deve
+    // conoscerlo. Verificato sul sorgente:
+    //   - StandardDrawingView: dichiara "transient private DrawingEditor fEditor" → Colleague
+    //   - AbstractTool: espone editor() { return fView.editor(); } → conosce il Mediator, seppure
+    //     indirettamente → Colleague
+    //   - StandardDrawing: NESSUN riferimento a DrawingEditor, nemmeno nell'interfaccia Drawing
+    //     → NON è un Colleague, è una struttura dati coordinata dall'editor. ESCLUSO.
+    //
+    // Una prima versione includeva Drawing tra i Colleague: era un errore di attribuzione nostro
+    // (Categoria 2), che produceva 2 violazioni spurie. Rimosso dopo verifica sul sorgente.
+    //
+    // Le 2 violazioni residue, entrambe fondate:
+    //   1. AbstractTool non ha un campo DrawingEditor — raggiunge il Mediator passando per un
+    //      altro Colleague (fView.editor()) invece di mantenerne un riferimento proprio
+    //   2. AbstractTool dichiara "protected DrawingView fView" — riferimento diretto a un altro
+    //      Colleague, l'accoppiamento che il Mediator dovrebbe eliminare
+    // ==================================================================================
+
+    @Tag("manuale")
+    @ParameterizedTest
+    @MethodSource("mediatorClasses")
+    void mediatorShouldFailCoupledColleagues(Class<?> concreteMediator) {
+        AssertionError error = assertThrows(AssertionError.class, () ->
+                PatternAssertions.assertThat(concreteMediator)
+                        .implementsMediator()
+                        .withMediatorInterface(CH.ifa.draw.framework.DrawingEditor.class)
+                        .withColleagues(
+                                CH.ifa.draw.standard.StandardDrawingView.class,
+                                CH.ifa.draw.standard.AbstractTool.class));
+        String msg = error.getMessage();
+        // Si asserisce QUALI violazioni restano, non solo che il verdetto sia negativo: un
+        // assertThrows nudo non intercetterebbe un cambiamento nella composizione del messaggio.
+        assertTrue(msg.contains("AbstractTool non ha un campo di tipo DrawingEditor"),
+                "Attesa la violazione sull'accesso indiretto al Mediator");
+        assertTrue(msg.contains("AbstractTool ha un campo di tipo StandardDrawingView"),
+                "Attesa la violazione sull'accoppiamento diretto fra Colleague");
+        assertFalse(msg.contains("StandardDrawing non ha"),
+                "StandardDrawing non è un Colleague (non conosce il Mediator): non deve comparire");
+    }
+
+    static Stream<Class<?>> mediatorClasses() {
+        return Stream.of(
+                CH.ifa.draw.application.DrawApplication.class,
+                CH.ifa.draw.applet.DrawApplet.class,
+                CH.ifa.draw.samples.javadraw.JavaDrawApp.class,
+                CH.ifa.draw.samples.javadraw.JavaDrawApplet.class,
+                CH.ifa.draw.samples.javadraw.JavaDrawViewer.class,
+                CH.ifa.draw.samples.net.NetApp.class,
+                CH.ifa.draw.samples.nothing.NothingApp.class,
+                CH.ifa.draw.samples.nothing.NothingApplet.class,
+                CH.ifa.draw.samples.pert.PertApplication.class,
+                CH.ifa.draw.samples.pert.PertApplet.class
         );
     }
 }

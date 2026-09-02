@@ -24,11 +24,25 @@ public class AbstractFactoryVerifier {
 
     public List<String> verify() {
         List<String> violations = new ArrayList<>();
+        checkDeclaresProductFamily(violations);
         checkAbstractFactoryIsAbstract(violations);
         checkAbstractFactoryHasAllFactoryMethods(violations);
         checkConcreteFactoryImplementsAbstractFactory(violations);
         checkConcreteFactoryOverridesAllMethods(violations);
         return violations;
+    }
+
+    // L'intento GoF dell'Abstract Factory è creare "famiglie di oggetti correlati": con un solo
+    // prodotto il pattern è strutturalmente indistinguibile da un Factory Method, e la verifica
+    // perderebbe il proprio contenuto informativo. Il minimo di due prodotti è quindi una
+    // proprietà necessaria del pattern, non una convenzione d'uso.
+    private void checkDeclaresProductFamily(List<String> violations) {
+        if (productTypeNames.size() < 2) {
+            violations.add(abstractFactory.getSimpleName()
+                    + " dichiara " + productTypeNames.size() + " prodotto"
+                    + " — l'AbstractFactory deve creare una famiglia di almeno 2 prodotti"
+                    + " correlati, altrimenti è strutturalmente un Factory Method");
+        }
     }
 
     private void checkAbstractFactoryIsAbstract(List<String> violations) {

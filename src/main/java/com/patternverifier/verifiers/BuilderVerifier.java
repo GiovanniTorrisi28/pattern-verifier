@@ -1,9 +1,13 @@
 package com.patternverifier.verifiers;
 
 import com.patternverifier.core.ClassMetadata;
+import com.patternverifier.core.MethodInfo;
+import com.patternverifier.core.SelfReturnAnalyzer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class BuilderVerifier {
 
@@ -23,18 +27,38 @@ public class BuilderVerifier {
     }
 
     // Un metodo fluente restituisce il tipo del Builder stesso, permettendo la catena di chiamate.
-    // Si verifica staticamente sul tipo di ritorno dichiarato — non serve analizzare il corpo.
+    // Il solo tipo di ritorno dichiarato non basta: è soddisfatto anche da un metodo che
+    // restituisce una nuova istanza invece di this (builder immutabile), comportamento diverso
+    // dalla fluent interface canonica. Il controllo procede quindi in due passi — prima la firma
+    // (Livello 1), poi il corpo via SelfReturnAnalyzer (istruzioni bytecode) — con messaggi
+    // distinti, perché "nessun metodo fluente" e "metodi fluenti che non restituiscono this"
+    // sono difetti diversi e richiedono correzioni diverse.
     private void checkHasFluentMethods(List<String> violations) {
         String builderName = builder.getClassName();
-        boolean found = builder.getMethods().stream()
+        List<String> declaredFluent = builder.getMethods().stream()
                 .filter(m -> !m.isConstructor())
                 .filter(m -> !isBuildMethod(m.getName()))
-                .anyMatch(m -> m.getReturnTypeName().equals(builderName));
-        if (!found) {
+                .filter(m -> m.getReturnTypeName().equals(builderName))
+                .map(MethodInfo::getName)
+                .collect(Collectors.toList());
+
+        if (declaredFluent.isEmpty()) {
             violations.add(builder.getSimpleName()
                     + " non ha metodi fluenti (nessun metodo restituisce "
                     + builder.getSimpleName()
                     + ") — il Builder deve permettere la catena di chiamate");
+            return;
+        }
+
+        Set<String> selfReturning = SelfReturnAnalyzer.findSelfReturningMethods(builderName);
+        boolean anyReturnsThis = declaredFluent.stream().anyMatch(selfReturning::contains);
+        if (!anyReturnsThis) {
+            violations.add(builder.getSimpleName()
+                    + " dichiara metodi che restituiscono " + builder.getSimpleName()
+                    + " (" + String.join(", ", declaredFluent) + ")"
+                    + " ma nessuno di essi restituisce this"
+                    + " — la catena di chiamate deve operare sulla stessa istanza,"
+                    + " non su una nuova a ogni passo");
         }
     }
 

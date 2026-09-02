@@ -37,6 +37,22 @@ class AbstractFactoryVerifierTest {
     }
 
     @Test
+    void singleProductFamilyShouldBeReported() {
+        // Con un solo prodotto dichiarato il pattern è strutturalmente indistinguibile da un
+        // Factory Method: l'intento GoF parla di "famiglie di oggetti correlati". Da non
+        // confondere con missingFactoryMethodInAbstractFactoryShouldBeReported, che dichiara
+        // due prodotti ma ne trova uno solo implementato nell'AbstractFactory.
+        AssertionError error = assertThrows(AssertionError.class, () ->
+                PatternAssertions.assertThat(UIFactory.class)
+                        .implementsAbstractFactory()
+                        .producing(Button.class)
+                        .withConcreteFactory(LightThemeFactory.class)
+        );
+        assertTrue(error.getMessage().contains("famiglia"),
+                "Il messaggio dovrebbe indicare che serve una famiglia di almeno 2 prodotti");
+    }
+
+    @Test
     void notAbstractFactoryShouldBeReported() {
         AssertionError error = assertThrows(AssertionError.class, () ->
                 PatternAssertions.assertThat(NotAbstractFactory.class)

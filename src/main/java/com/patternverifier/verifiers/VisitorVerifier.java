@@ -12,12 +12,20 @@ public class VisitorVerifier {
     private final ClassMetadata concreteVisitor;
     private final ClassMetadata visitorInterface;
     private final ClassMetadata element;
+    // Opzionale (null se non dichiarato): la ConcreteElement che implementa davvero accept().
+    private final ClassMetadata concreteElement;
 
     public VisitorVerifier(ClassMetadata concreteVisitor, ClassMetadata visitorInterface,
                             ClassMetadata element) {
+        this(concreteVisitor, visitorInterface, element, null);
+    }
+
+    public VisitorVerifier(ClassMetadata concreteVisitor, ClassMetadata visitorInterface,
+                            ClassMetadata element, ClassMetadata concreteElement) {
         this.concreteVisitor = concreteVisitor;
         this.visitorInterface = visitorInterface;
         this.element = element;
+        this.concreteElement = concreteElement;
     }
 
     public List<String> verify() {
@@ -27,16 +35,25 @@ public class VisitorVerifier {
         checkElementHasAcceptMethod(violations);
         checkConcreteVisitorImplementsVisitor(violations);
         checkConcreteVisitorHasConcreteVisitMethod(violations);
-        checkElementCallsVisitorMethods(violations);
+        if (concreteElement != null) {
+            checkConcreteElementImplementsElement(violations);
+            checkConcreteElementHasConcreteAccept(violations);
+        }
+        checkDoubleDispatch(violations);
         return violations;
     }
 
-    private void checkElementCallsVisitorMethods(List<String> violations) {
-        // Se Element è astratto o interfaccia, il corpo di accept() è nelle ConcreteElement
-        // che non sono passate al verifier — skip per evitare falsi positivi
-        if (element.isAbstract() || element.isInterface()) return;
-        if (!MethodInvocationAnalyzer.invokesMethodsOn(element.getClassName(), visitorInterface.getClassName())) {
-            violations.add(element.getSimpleName()
+    // Il double dispatch (accept che chiama visitor.visit(this)) vive nel corpo di accept(),
+    // che esiste solo in una classe concreta. Se il programmatore ha dichiarato una
+    // ConcreteElement la verifica si esegue su quella — il caso canonico, in cui Element è
+    // un'interfaccia e il corpo reale sta nelle sue implementazioni. Se non l'ha dichiarata si
+    // ricade sul comportamento storico: si verifica Element stessa quando è concreta, si salta
+    // quando è astratta o interfaccia (per non produrre falsi positivi su un corpo assente).
+    private void checkDoubleDispatch(List<String> violations) {
+        ClassMetadata target = (concreteElement != null) ? concreteElement : element;
+        if (target.isAbstract() || target.isInterface()) return;
+        if (!MethodInvocationAnalyzer.invokesMethodsOn(target.getClassName(), visitorInterface.getClassName())) {
+            violations.add(target.getSimpleName()
                     + " non invoca metodi sul Visitor nel metodo accept"
                     + " — il double dispatch richiede che accept chiami visitor.visit(this)");
         }
@@ -98,6 +115,30 @@ public class VisitorVerifier {
                     + " non ha un'implementazione concreta di un metodo visit*"
                     + " — il ConcreteVisitor deve fornire l'operazione specifica"
                     + " per almeno un tipo di elemento");
+        }
+    }
+
+    private void checkConcreteElementImplementsElement(List<String> violations) {
+        if (!TypeHierarchy.isAssignable(concreteElement.getClassName(), element.getClassName())) {
+            violations.add(concreteElement.getSimpleName()
+                    + " non implementa né estende "
+                    + element.getSimpleName()
+                    + " — il ConcreteElement deve conformarsi al tipo Element visitato");
+        }
+    }
+
+    private void checkConcreteElementHasConcreteAccept(List<String> violations) {
+        String visitorName = visitorInterface.getClassName();
+        boolean found = concreteElement.getMethods().stream()
+                .filter(m -> !m.isConstructor())
+                .anyMatch(m -> m.getName().equals("accept")
+                        && !m.isAbstract()
+                        && m.getParameterTypeNames().contains(visitorName));
+        if (!found) {
+            violations.add(concreteElement.getSimpleName()
+                    + " non ha un'implementazione concreta di accept("
+                    + visitorInterface.getSimpleName()
+                    + ") — il ConcreteElement deve implementare accept per realizzare il double dispatch");
         }
     }
 }
